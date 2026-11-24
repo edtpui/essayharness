@@ -3,6 +3,7 @@ import { ENTRY_SOURCES } from "@/lib/types";
 import { createEntry, extractEntry, isExtracting } from "@/server/bank";
 import { entries } from "@/server/db";
 import { handler, json, readBody } from "@/server/http";
+import { isReviewing } from "@/server/uploads";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,11 @@ export const GET = handler(async (req: Request) => {
 		.map((e) =>
 			e.extraction.status === "running" && !isExtracting(e.id)
 				? { ...e, extraction: { ...e.extraction, status: "failed" as const, error: "Sorting was interrupted. Try again." } }
+				: e,
+		)
+		.map((e) =>
+			e.review && e.review.status === "running" && !isReviewing(e.id)
+				? { ...e, review: { ...e.review, status: "failed" as const, error: "The review was interrupted. Try again." } }
 				: e,
 		);
 	return json({ entries: list });

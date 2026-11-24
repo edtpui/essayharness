@@ -74,6 +74,16 @@ function scripted(req: Captured): Reply {
 		if (/shorter/i.test(latest)) return turn("revise", "Make it shorter.");
 		return turn("none", "", true, openQuestion ? [openQuestion] : []);
 	}
+	if (name === "document_review") {
+		return reply({
+			kind: "essay",
+			summary: "An essay about night shifts.",
+			strengths: ["A concrete 2 a.m. scene"],
+			weaknesses: ["The ending is generic"],
+			suggestions: ["End on what changed"],
+			goodFor: ["a challenge you overcame"],
+		});
+	}
 	if (name === "interview_questions") {
 		return reply({ questions: [{ question: "Who taught you the most about work?", theme: "Influences", why: "Common prompt." }] });
 	}
@@ -320,4 +330,22 @@ test("chat: the message is saved even when the model call fails", async () => {
 	const saved = (await essays.get(essay.id))!;
 	assert.equal(saved.messages.length, 1);
 	assert.equal(saved.messages[0]!.text, "This story must not be lost.");
+});
+
+test("an upload is added to the bank and reviewed in the background", async () => {
+	const { processUpload } = await import("@/server/uploads");
+	const entry = await createEntry({ text: "At 2 a.m. I did calculus in the pharmacy back room.", source: "import", title: "old-essay.docx", writingSample: true });
+	processUpload(entry.id);
+	let current = await entries.get(entry.id);
+	for (let i = 0; i < 100 && current?.review?.status !== "done"; i++) {
+		await new Promise((r) => setTimeout(r, 20));
+		current = await entries.get(entry.id);
+	}
+	assert.equal(current?.extraction.status, "done");
+	assert.equal(current?.extraction.experienceIds.length, 1);
+	assert.equal(current?.review?.status, "done");
+	assert.equal(current?.review?.kind, "essay");
+	assert.deepEqual(current?.review?.weaknesses, ["The ending is generic"]);
+	const reviewCall = server.calls.findLast((c) => c.body?.response_format?.json_schema?.name === "document_review")!;
+	assert.match(userText(reviewCall), /<note source="import"[^>]*title="old-essay.docx"/);
 });

@@ -83,6 +83,22 @@ export const ExtractionSchema = z.object({
 });
 export type Extraction = z.infer<typeof ExtractionSchema>;
 
+export const DOCUMENT_KINDS = ["essay", "story", "resume", "notes", "other"] as const;
+
+export const ReviewSchema = z.object({
+	status: z.enum(["pending", "running", "done", "failed"]),
+	error: z.string().default(""),
+	kind: z.enum(DOCUMENT_KINDS).default("other"),
+	summary: z.string().default(""),
+	strengths: z.array(z.string()).default([]),
+	weaknesses: z.array(z.string()).default([]),
+	suggestions: z.array(z.string()).default([]),
+	goodFor: z.array(z.string()).default([]),
+	at: z.string().default(""),
+	model: z.string().default(""),
+});
+export type Review = z.infer<typeof ReviewSchema>;
+
 export const EntrySchema = z.object({
 	id: z.string(),
 	createdAt: isoDate,
@@ -98,6 +114,8 @@ export const EntrySchema = z.object({
 	/** The applicant's own finished writing, used as a voice reference when drafting. */
 	writingSample: z.boolean().default(false),
 	extraction: ExtractionSchema,
+	/** For uploaded documents: the coach's review of the piece. */
+	review: ReviewSchema.nullable().default(null),
 });
 export type Entry = z.infer<typeof EntrySchema>;
 
@@ -310,7 +328,7 @@ export interface SettingsView {
 	dataDir: string;
 }
 
-export const USAGE_TASKS = ["extract", "plan", "interview", "draft", "revise", "tighten", "audit", "chat", "test"] as const;
+export const USAGE_TASKS = ["extract", "plan", "interview", "draft", "revise", "tighten", "audit", "chat", "review", "test"] as const;
 export type UsageTask = (typeof USAGE_TASKS)[number];
 
 export interface UsageRecord {
@@ -351,3 +369,27 @@ export type GenerationEvent =
 	| { type: "delta"; text: string }
 	| { type: "done"; version: Version }
 	| { type: "error"; message: string };
+
+export const GRAPH_NODE_KINDS = ["experience", "skill", "person", "essay", "document"] as const;
+export type GraphNodeKind = (typeof GRAPH_NODE_KINDS)[number];
+
+export interface GraphNode {
+	id: string;
+	kind: GraphNodeKind;
+	label: string;
+	/** Experience category, for colouring. */
+	category?: Category;
+	detail: string;
+	href?: string;
+}
+
+export interface GraphEdge {
+	source: string;
+	target: string;
+	kind: "shows" | "involves" | "uses" | "from";
+}
+
+export interface GraphData {
+	nodes: GraphNode[];
+	edges: GraphEdge[];
+}

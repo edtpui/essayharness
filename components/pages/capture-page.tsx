@@ -95,7 +95,9 @@ export function CapturePage() {
 	}, [load]);
 
 	// Keep statuses fresh while anything is being sorted.
-	const busy = sorting.size > 0 || (entries ?? []).some((e) => e.extraction.status === "running");
+	const busy =
+		sorting.size > 0 ||
+		(entries ?? []).some((e) => e.extraction.status === "running" || e.review?.status === "running" || e.review?.status === "pending" || (e.source === "import" && e.extraction.status === "pending"));
 	useEffect(() => {
 		if (!busy) return;
 		const timer = setInterval(() => void load(), 3000);
@@ -298,30 +300,38 @@ function InterviewSection({
 	);
 }
 
+const ACCEPT = ".docx,.pdf,.txt,.md,.markdown,application/pdf,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
 function ImportSection({ onImported }: { onImported: () => Promise<void> }) {
-	const [file, setFile] = useState<File | null>(null);
-	const [sample, setSample] = useState(false);
+	const [files, setFiles] = useState<File[]>([]);
+	const [sample, setSample] = useState(true);
 	const [busy, setBusy] = useState(false);
+	const [dragging, setDragging] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [done, setDone] = useState<string | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	const upload = async () => {
-		if (!file) return;
+		if (!files.length) return;
 		setBusy(true);
 		setError(null);
 		setDone(null);
 		try {
 			const form = new FormData();
-			form.set("file", file);
+			for (const file of files) form.append("file", file);
 			form.set("writingSample", String(sample));
-			const res = await api<{ entry: Entry; experiences: Experience[] }>("/api/import", { form });
-			setDone(
-				res.entry.extraction.status === "done"
-					? `Imported ${file.name}: ${res.experiences.length} experience${res.experiences.length === 1 ? "" : "s"} added or updated.`
-					: `Imported ${file.name}, but sorting failed: ${res.entry.extraction.error}`,
-			);
-			setFile(null);
+			const res = await fetch("/api/import", { method: "POST", body: form });
+			const data = (await res.json().catch(() => ({}))) as { imported?: Entry[]; failed?: { name: string; error: string }[]; error?: string };
+			if (data.error) throw new Error(data.error);
+			const imported = data.imported ?? [];
+			const failed = data.failed ?? [];
+			if (imported.length) {
+				setDone(
+					`Uploaded ${imported.length} file${imported.length === 1 ? "" : "s"}. Each is being added to your experience bank and reviewed in the background; the review appears on the document below.`,
+				);
+			}
+			if (failed.length) setError(failed.map((f) => f.error).join(" "));
+			setFiles([]);
 			if (inputRef.current) inputRef.current.value = "";
 			await onImported();
 		} catch (err) {
@@ -332,22 +342,57 @@ function ImportSection({ onImported }: { onImported: () => Promise<void> }) {
 	};
 
 	return (
-		<Section title="Import a document" description="A résumé, activity list, or a past essay (.txt, .md or .pdf). For Word or Google Docs, paste the text into the box above.">
-			<div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-surface px-3 py-3">
-				<input
-					ref={inputRef}
-					type="file"
-					accept=".txt,.md,.markdown,.pdf,text/plain,text/markdown,application/pdf"
-					onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-					className="text-sm file:mr-3 file:rounded-md file:border file:border-border-strong file:bg-surface file:px-3 file:py-1.5 file:text-sm"
-				/>
-				<label className="flex items-center gap-2 text-sm">
-					<input type="checkbox" checked={sample} onChange={(e) => setSample(e.target.checked)} />
-					It&apos;s my own writing — use it to match my voice
-				</label>
-				<Button onClick={upload} busy={busy} disabled={!file} className="ml-auto">
-					{busy ? "Importing and sorting…" : "Import"}
-				</Button>
+		<Section
+			title="Upload essays and stories"
+			description="Past essays, personal statements, stories, a résumé (.docx, .pdf, .txt or .md, up to 20 at once). Each one is added to your experience bank and the graph, and the coach reviews it."
+		>
+			<div
+				onDragOver={(e) => {
+					e.preventDefault();
+					setDragging(true);
+				}}
+				onDragLeave={() => setDragging(false)}
+				onDrop={(e) => {
+					e.preventDefault();
+					setDragging(false);
+					setFiles((current) => [...current, ...Array.from(e.dataTransfer.files)]);
+				}}
+				className={cx("rounded-md border border-dashed px-4 py-4", dragging ? "border-accent bg-accent-weak/40" : "border-border-strong bg-surface")}
+			>
+				<div className="flex flex-wrap items-center gap-3">
+					<Button onClick={() => inputRef.current?.click()}>Choose files</Button>
+					<span className="text-sm text-muted">or drop them here</span>
+					<input
+						ref={inputRef}
+						type="file"
+						multiple
+						accept={ACCEPT}
+						className="hidden"
+						onChange={(e) => setFiles((current) => [...current, ...Array.from(e.target.files ?? [])])}
+					/>
+				</div>
+				{files.length > 0 && (
+					<ul className="mt-3 grid gap-1 text-sm">
+						{files.map((f, i) => (
+							<li key={`${f.name}-${i}`} className="flex items-center gap-2">
+								<span className="truncate">{f.name}</span>
+								<span className="text-xs text-muted">{Math.max(1, Math.round(f.size / 1024))} KB</span>
+								<button type="button" className="text-xs text-muted underline" onClick={() => setFiles((cur) => cur.filter((_, j) => j !== i))}>
+									remove
+								</button>
+							</li>
+						))}
+					</ul>
+				)}
+				<div className="mt-3 flex flex-wrap items-center gap-3">
+					<label className="flex items-center gap-2 text-sm">
+						<input type="checkbox" checked={sample} onChange={(e) => setSample(e.target.checked)} />
+						My own writing — use it to match my voice
+					</label>
+					<Button variant="primary" onClick={upload} busy={busy} disabled={!files.length} className="ml-auto">
+						Upload {files.length > 1 ? `${files.length} files` : ""}
+					</Button>
+				</div>
 			</div>
 			{error && <Notice className="mt-3">{error}</Notice>}
 			{done && <Notice tone="ok" className="mt-3">{done}</Notice>}
@@ -406,6 +451,16 @@ function EntryRow({
 		}
 	};
 
+	const retryReview = async () => {
+		setError(null);
+		try {
+			await api(`/api/entries/${entry.id}/review`, { method: "POST" });
+			await onChanged();
+		} catch (err) {
+			setError(messageOf(err));
+		}
+	};
+
 	const toggleSample = async () => {
 		try {
 			await api(`/api/entries/${entry.id}`, { method: "PATCH", body: { writingSample: !entry.writingSample } });
@@ -424,6 +479,8 @@ function EntryRow({
 						<span>{formatDateTime(entry.createdAt)}</span>
 						<Badge>{SOURCE_LABEL[entry.source]}</Badge>
 						{entry.writingSample && <Badge tone="accent">Voice sample</Badge>}
+						{entry.review?.status === "done" && <Badge tone="accent">Reviewed</Badge>}
+						{(entry.review?.status === "pending" || entry.review?.status === "running") && <Badge tone="warn">Reviewing…</Badge>}
 						{entry.title && <span className="truncate">{entry.title}</span>}
 						<span className="ml-auto">
 							{working ? (
@@ -460,6 +517,7 @@ function EntryRow({
 							))}
 						</p>
 					)}
+					{entry.review && <ReviewView entry={entry} onRetry={retryReview} />}
 					{error && <Notice className="mt-2">{error}</Notice>}
 					<div className="mt-2 flex flex-wrap gap-2">
 						{edited && (
@@ -480,5 +538,53 @@ function EntryRow({
 				</div>
 			)}
 		</li>
+	);
+}
+
+function ReviewView({ entry, onRetry }: { entry: Entry; onRetry: () => void }) {
+	const review = entry.review!;
+	if (review.status === "pending" || review.status === "running") return <p className="mt-2 text-xs text-muted">The coach is reviewing this document…</p>;
+	if (review.status === "failed") {
+		return (
+			<Notice className="mt-2">
+				Review failed: {review.error}{" "}
+				<button type="button" className="underline" onClick={onRetry}>
+					Try again
+				</button>
+			</Notice>
+		);
+	}
+	const list = (title: string, items: string[]) =>
+		items.length > 0 && (
+			<div>
+				<p className="text-xs font-medium text-muted">{title}</p>
+				<ul className="mt-1 list-disc space-y-1 pl-5">
+					{items.map((item, i) => (
+						<li key={i}>{item}</li>
+					))}
+				</ul>
+			</div>
+		);
+	return (
+		<div className="mt-3 grid gap-3 rounded-md border border-border bg-surface-2 px-3 py-3 text-sm">
+			<div className="flex flex-wrap items-center gap-2">
+				<h3 className="font-semibold">Review</h3>
+				<Badge>{review.kind}</Badge>
+				<button type="button" className="ml-auto text-xs text-muted underline" onClick={onRetry}>
+					Review again
+				</button>
+			</div>
+			<p>{review.summary}</p>
+			<div className="grid gap-3 sm:grid-cols-2">
+				{list("What works", review.strengths)}
+				{list("What's weak", review.weaknesses)}
+			</div>
+			{list("How to strengthen it", review.suggestions)}
+			{review.goodFor.length > 0 && (
+				<p className="text-xs text-muted">
+					Could answer prompts about: <span className="text-text">{review.goodFor.join(" · ")}</span>
+				</p>
+			)}
+		</div>
 	);
 }

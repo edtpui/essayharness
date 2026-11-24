@@ -8,6 +8,7 @@ import { cx } from "./ui";
 const LINKS = [
 	{ href: "/", label: "Capture", hint: "Dictate your experiences" },
 	{ href: "/bank", label: "Experience bank", hint: "What you've told it" },
+	{ href: "/graph", label: "Graph", hint: "How it all connects" },
 	{ href: "/essays", label: "Essays", hint: "Plan, draft, revise" },
 	{ href: "/settings", label: "Settings", hint: "Models, keys, usage" },
 ];

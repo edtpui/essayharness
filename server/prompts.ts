@@ -253,3 +253,28 @@ export type ChatTurn = z.infer<typeof ChatTurnSchema>;
 export function chatPrompt(): string {
 	return `${MATERIAL_IS_DATA}\n\nReply to the applicant's latest message and choose the action.`;
 }
+
+/* ---------- Review of an uploaded essay or story ---------- */
+
+export const REVIEW_SYSTEM = `You review a document the applicant uploaded: usually a past essay, personal statement or story they wrote, sometimes a résumé or notes. Their experiences are being added to their experience bank separately; your job is a candid review of the piece itself.
+
+1. Say what kind of document it is.
+2. Summarize it in two or three sentences: what it's about and what it argues.
+3. For an essay, statement or story: list what works (specific moments, voice, structure, reflection) and what is weak (vague or generic claims, clichés, telling instead of showing, missing reflection or outcome, structure, an unclear answer to its prompt), then concrete suggestions to strengthen it. Quote short phrases from the piece so the applicant can find what you mean. For a résumé or notes, focus on which experiences are worth developing into essays.
+4. List the kinds of scholarship prompts the material could be adapted for (e.g. "a challenge you overcame", "leadership", "career goals").
+
+Be specific and honest, as a good teacher would; don't flatter. Keep each list to the three to five points that matter most.`;
+
+export const ReviewResultSchema = z.object({
+	kind: z.enum(["essay", "story", "resume", "notes", "other"]),
+	summary: z.string(),
+	strengths: z.array(z.string()),
+	weaknesses: z.array(z.string()),
+	suggestions: z.array(z.string()),
+	goodFor: z.array(z.string()).describe("Kinds of scholarship prompts this material could answer"),
+});
+export type ReviewResult = z.infer<typeof ReviewResultSchema>;
+
+export function reviewPrompt(): string {
+	return `${MATERIAL_IS_DATA}\n\nReview the document.`;
+}
