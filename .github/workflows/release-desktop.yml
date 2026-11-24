@@ -1,0 +1,53 @@
+# EssayHarness desktop release: builds the Windows .exe (NSIS) and macOS
+# .dmg installers and attaches them to the GitHub Release for the tag.
+#
+# Install at .github/workflows/release-desktop.yml in the repo. It runs
+# alongside the existing release.yml (which publishes the Docker image to
+# GHCR on the same v* tags); both attach to the same release.
+#
+# The binaries are unsigned. Windows SmartScreen and macOS Gatekeeper will
+# warn on first run until code-signing certificates are added.
+
+name: Release desktop apps
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    env:
+      # No signing certificates are configured; do not let electron-builder
+      # fail the macOS build hunting for one.
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Builds the Next.js standalone server (SE_STANDALONE=1), stages it
+      # into dist-app/, and runs electron-builder for the current OS:
+      # NSIS .exe on Windows, .dmg (x64 and arm64) on macOS.
+      - run: npm run dist
+
+      - name: Attach installers to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.exe
+            dist/*.dmg
