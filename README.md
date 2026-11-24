@@ -2,7 +2,9 @@
 
 Dictate your life experiences once, keep them in a local experience bank, and draft scholarship essays and personal statements from them. The essay agent plans each essay against your bank, asks you about the specifics it doesn't have yet, and only writes what your own material supports.
 
-It uses the same building blocks as EssayHarness: your own API keys, Deepgram dictation streamed straight from the browser, local plain-file storage, and an agent that asks questions instead of guessing. It is a separate app written for essays; it shares no code with EssayHarness.
+Your own API keys, Deepgram dictation streamed straight from the browser, local plain-file storage, and an agent that asks questions instead of guessing.
+
+Inspired by [LearnHarness](https://github.com/amosblomqvist/learnharness).
 
 ## How it works
 
@@ -10,7 +12,7 @@ It uses the same building blocks as EssayHarness: your own API keys, Deepgram di
    **Upload essays and stories** (`.docx`, `.pdf`, `.txt`, `.md`, up to 20 at once, or drag them in): each is added to the bank and gets a candid review from the coach — what works, what's weak, how to strengthen it, and which prompts it could answer.
 2. **Experience bank.** Review and correct everything the agent extracted. Essays only use what's in the bank and in your answers, so fixing a wrong detail here fixes every future draft. *About you* holds facts every essay can use.
    **Graph** shows every experience linked by the qualities and people they share, the essays that use them and the documents they came from. Zoom, pan, filter, search, and click a node to see its connections.
-3. **Essays.** Paste the prompt, the length limit and the scholarship's criteria, then work on the essay in a **chat**, like EssayHarness: tell it stories, details you forgot, or what to change, by dictation or typing. Each message is kept, saved to your bank when it says something about you, and the coach replies and plans, drafts, revises or fact-checks as needed. The draft panel beside the chat always shows the current version.
+3. **Essays.** Paste the prompt, the length limit and the scholarship's criteria, then work on the essay in a **chat**: tell it stories, details you forgot, or what to change, by dictation or typing. Each message is kept, saved to your bank when it says something about you, and the coach replies and plans, drafts, revises or fact-checks as needed. The draft panel beside the chat always shows the current version.
    - **Plan:** the agent proposes two or three angles, outlines them against specific experiences, and lists the **gap questions** the essay needs answered.
    - **Questions:** answer by dictation or typing; answers go into the bank too. Re-plan to let it check for anything else.
    - **Draft:** streamed live, in your voice (it uses your quotes, dictated notes and any writing samples you mark), within the limit.
@@ -28,7 +30,7 @@ npm run dev
 
 Open http://localhost:3400 and add your keys in **Settings**:
 
-- **Anthropic** for Claude (the default writing model is `claude-opus-5-5`), or any of the other API-key providers EssayHarness offers (OpenAI, Google Gemini, OpenRouter, xAI, Mistral, DeepSeek, Groq, Together, Fireworks, Cerebras, Hugging Face, NVIDIA, Baseten, Vercel AI Gateway, OpenCode, Meta, Moonshot, Kimi, MiniMax, Z.AI, Ant Ling, Qwen and Xiaomi token plans), or any **OpenAI-compatible endpoint** — e.g. Ollama at `http://localhost:11434/v1` for fully local models. A second, cheaper model can be set for sorting notes.
+- **Anthropic** for Claude (the default writing model is `claude-opus-5-5`), or any of the other API-key providers available (OpenAI, Google Gemini, OpenRouter, xAI, Mistral, DeepSeek, Groq, Together, Fireworks, Cerebras, Hugging Face, NVIDIA, Baseten, Vercel AI Gateway, OpenCode, Meta, Moonshot, Kimi, MiniMax, Z.AI, Ant Ling, Qwen and Xiaomi token plans), or any **OpenAI-compatible endpoint** — e.g. Ollama at `http://localhost:11434/v1` for fully local models. A second, cheaper model can be set for sorting notes.
 - **Deepgram** for dictation. The key needs **Member** permission or higher, because the app mints short-lived browser tokens from it (`/v1/auth/grant`); audio goes from the browser to Deepgram directly and never through this server.
 
 For a production build: `npm run build` then `npm start` (both bind to 127.0.0.1:3400).
