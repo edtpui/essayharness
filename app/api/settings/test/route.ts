@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { PROVIDERS } from "@/lib/types";
+import { isProviderId } from "@/lib/providers";
 import { mintDeepgramToken } from "@/server/deepgram";
 import { handler, json, readBody } from "@/server/http";
 import { listModels } from "@/server/llm";
 
-const TestInput = z.object({ target: z.enum([...PROVIDERS, "deepgram"]) });
+const TestInput = z.object({ target: z.string().refine((t) => t === "deepgram" || isProviderId(t), "Unknown provider") });
 
 /** Checks a connection without spending tokens: lists models, or mints a dictation token. */
 export const POST = handler(async (req: Request) => {

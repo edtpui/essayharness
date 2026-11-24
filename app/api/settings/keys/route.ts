@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { CREDENTIALS } from "@/lib/types";
+import { CREDENTIAL_IDS } from "@/lib/providers";
 import { credentialStatuses, setCredential } from "@/server/db";
 import { handler, json, readBody } from "@/server/http";
 
 const KeyInput = z.object({
-	name: z.enum(CREDENTIALS),
+	name: z.string().refine((id) => CREDENTIAL_IDS.includes(id), "Unknown key"),
 	key: z.string().trim().max(2000).nullable(),
 });
 

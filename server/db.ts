@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
-	CREDENTIALS,
 	EntrySchema,
 	EssaySchema,
 	ExperienceSchema,
@@ -13,6 +12,7 @@ import {
 	type Profile,
 	type Settings,
 } from "@/lib/types";
+import { CREDENTIAL_IDS, credentialEnvVar } from "@/lib/providers";
 import { collection, nowIso, readSingleton, updateSingleton } from "./store";
 
 export const entries = collection("entries", EntrySchema);
@@ -52,20 +52,13 @@ export function updateInterview(fn: (current: Interview) => Interview): Promise<
 /* API keys live in their own file so settings can be shown or exported
  * without them. The browser only ever receives a masked hint. */
 
-const CredentialsSchema = z.object({
-	anthropic: z.string().optional(),
-	openai: z.string().optional(),
-	custom: z.string().optional(),
-	deepgram: z.string().optional(),
-});
+const CredentialsSchema = z.record(z.string(), z.string());
 type Credentials = z.infer<typeof CredentialsSchema>;
 
-export const CREDENTIAL_ENV: Record<CredentialName, string> = {
-	anthropic: "ANTHROPIC_API_KEY",
-	openai: "OPENAI_API_KEY",
-	custom: "CUSTOM_LLM_API_KEY",
-	deepgram: "DEEPGRAM_API_KEY",
-};
+function envKey(name: CredentialName): string | undefined {
+	const variable = credentialEnvVar(name);
+	return variable ? process.env[variable]?.trim() || undefined : undefined;
+}
 
 function readCredentials(): Promise<Credentials> {
 	return readSingleton("credentials", CredentialsSchema, () => ({}));
@@ -74,8 +67,7 @@ function readCredentials(): Promise<Credentials> {
 export async function getCredential(name: CredentialName): Promise<string | undefined> {
 	const saved = (await readCredentials())[name]?.trim();
 	if (saved) return saved;
-	const fromEnv = process.env[CREDENTIAL_ENV[name]]?.trim();
-	return fromEnv || undefined;
+	return envKey(name);
 }
 
 export async function setCredential(name: CredentialName, value: string | null): Promise<void> {
@@ -94,13 +86,13 @@ function hint(key: string): string {
 export async function credentialStatuses(): Promise<Record<CredentialName, CredentialStatus>> {
 	const saved = await readCredentials();
 	const out = {} as Record<CredentialName, CredentialStatus>;
-	for (const name of CREDENTIALS) {
+	for (const name of CREDENTIAL_IDS) {
 		const savedKey = saved[name]?.trim();
-		const envKey = process.env[CREDENTIAL_ENV[name]]?.trim();
+		const fromEnv = envKey(name);
 		out[name] = savedKey
 			? { source: "saved", hint: hint(savedKey) }
-			: envKey
-				? { source: "env", hint: `${CREDENTIAL_ENV[name]} ${hint(envKey)}` }
+			: fromEnv
+				? { source: "env", hint: `${credentialEnvVar(name)} ${hint(fromEnv)}` }
 				: { source: "none", hint: "" };
 	}
 	return out;

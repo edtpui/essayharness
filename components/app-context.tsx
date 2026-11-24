@@ -45,7 +45,7 @@ export function useDictationSettings(): { language: string; ready: boolean; know
 	const { view } = useApp();
 	return {
 		language: view?.settings.dictationLanguage ?? "en",
-		ready: view ? view.credentials.deepgram.source !== "none" : false,
+		ready: view ? (view.credentials.deepgram?.source ?? "none") !== "none" : false,
 		known: view !== null,
 	};
 }

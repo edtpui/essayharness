@@ -264,7 +264,8 @@ export async function planCore(id: string, signal?: AbortSignal): Promise<Essay>
 				ready: plan.ready,
 			},
 			selectedAngle: plan.recommendedAngle,
-			questions: mergeQuestions(e.questions, plan.gaps, settings.maxQuestions, now),
+			// With no limit set the model decides; 20 only guards against a runaway list.
+			questions: mergeQuestions(e.questions, plan.gaps, settings.maxQuestions ?? 20, now),
 		}));
 	}
 }

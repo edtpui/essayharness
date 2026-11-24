@@ -2,16 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { api, messageOf } from "@/lib/api";
-import { PROVIDERS, PROVIDER_LABELS, type CredentialName, type ModelRef, type Provider, type Settings, type SettingsView, type UsageSummary } from "@/lib/types";
+import { PROVIDER_LIST, providerInfo, providerLabel } from "@/lib/providers";
+import type { CredentialName, CredentialStatus, ModelRef, Provider, Settings, SettingsView, UsageSummary } from "@/lib/types";
 import { DICTATION_LANGUAGES, formatDateTime, formatUsd } from "@/lib/text";
 import { useApp } from "../app-context";
 import { Badge, Button, Field, Notice, PageHeader, Section, Select, TextInput } from "../ui";
 
-const SUGGESTED: Record<Provider, string[]> = {
-	anthropic: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-fable-5-2"],
-	openai: [],
-	custom: [],
-};
+const suggested = (provider: Provider): string[] => providerInfo(provider)?.models ?? [];
+
+const FEATURED = ["anthropic", "openai", "google", "openrouter", "custom"];
 
 export function SettingsPage() {
 	const { view, refresh, setView, loadError } = useApp();
@@ -71,23 +70,32 @@ function ModelPicker({ label, value, onChange, customName }: { label: string; va
 		}
 	};
 
-	const options = [...new Set([...SUGGESTED[value.provider], ...models])];
+	const options = [...new Set([...suggested(value.provider), ...models])];
 	return (
 		<div className="grid gap-2 sm:grid-cols-[14rem_1fr_auto] sm:items-end">
 			<Field label={label}>
 				<Select
 					value={value.provider}
 					onChange={(e) => {
-						const provider = e.target.value as Provider;
+						const provider = e.target.value;
 						setModels([]);
-						onChange({ provider, model: SUGGESTED[provider][0] ?? "" });
+						onChange({ provider, model: suggested(provider)[0] ?? "" });
 					}}
 				>
-					{PROVIDERS.map((p) => (
-						<option key={p} value={p}>
-							{p === "custom" ? customName || PROVIDER_LABELS.custom : PROVIDER_LABELS[p]}
-						</option>
-					))}
+					<optgroup label="Common">
+						{FEATURED.map((id) => (
+							<option key={id} value={id}>
+								{providerLabel(id, customName)}
+							</option>
+						))}
+					</optgroup>
+					<optgroup label="More providers">
+						{PROVIDER_LIST.filter((p) => !FEATURED.includes(p.id)).map((p) => (
+							<option key={p.id} value={p.id}>
+								{p.label}
+							</option>
+						))}
+					</optgroup>
 				</Select>
 			</Field>
 			<Field label="Model">
@@ -170,8 +178,16 @@ function ModelSettings({ view, onSaved }: { view: SettingsView; onSaved: (view: 
 							))}
 						</Select>
 					</Field>
-					<Field label="Questions per plan" hint="The most gap questions one planning pass may ask">
-						<TextInput type="number" min={1} max={12} value={form.maxQuestions} onChange={(e) => set("maxQuestions", Math.max(1, Math.min(12, Number(e.target.value) || 1)))} />
+					<Field label="Most questions per plan" hint="Leave blank to let the model decide how many it needs.">
+						<TextInput
+							inputMode="numeric"
+							value={form.maxQuestions ?? ""}
+							placeholder="Model decides"
+							onChange={(e) => {
+								const digits = e.target.value.replace(/[^\d]/g, "");
+								set("maxQuestions", digits ? Math.max(1, Math.min(12, Number(digits))) : null);
+							}}
+						/>
 					</Field>
 				</div>
 				{error && <Notice>{error}</Notice>}
@@ -186,26 +202,66 @@ function ModelSettings({ view, onSaved }: { view: SettingsView; onSaved: (view: 
 	);
 }
 
-const KEY_ROWS: { name: CredentialName; label: string; help: string }[] = [
-	{ name: "anthropic", label: "Anthropic", help: "console.anthropic.com → API keys" },
-	{ name: "openai", label: "OpenAI", help: "platform.openai.com → API keys" },
-	{ name: "custom", label: "Custom endpoint", help: "Only if your endpoint needs one (OpenRouter does; Ollama doesn't)" },
-	{ name: "deepgram", label: "Deepgram (dictation)", help: "console.deepgram.com. The key needs Member permission or higher." },
-];
+interface KeyRowInfo {
+	name: CredentialName;
+	label: string;
+	help: string;
+	optional?: boolean;
+}
+
+function keyRowFor(id: string, customName: string): KeyRowInfo {
+	if (id === "deepgram") return { name: id, label: "Deepgram (dictation)", help: "console.deepgram.com. The key needs Member permission or higher." };
+	const info = providerInfo(id);
+	return { name: id, label: providerLabel(id, customName), help: info ? `${info.keyHelp}. Or set ${info.envVar}.` : "", optional: info?.keyOptional };
+}
 
 function KeySettings({ view, onChanged }: { view: SettingsView; onChanged: () => Promise<void> }) {
+	const [added, setAdded] = useState<string[]>([]);
+	const s = view.settings;
+	// The providers in use, the common ones, anything with a key, and whatever was added here.
+	const shown = [
+		...new Set([
+			s.mainModel.provider,
+			...(s.extractionModel ? [s.extractionModel.provider] : []),
+			"anthropic",
+			"openai",
+			"deepgram",
+			...Object.entries(view.credentials)
+				.filter(([, status]) => status.source !== "none")
+				.map(([id]) => id),
+			...added,
+		]),
+	];
+	const addable = PROVIDER_LIST.filter((p) => !shown.includes(p.id));
 	return (
 		<Section title="API keys" description="Saved in credentials.json in your data folder. A key set as an environment variable is used when none is saved here.">
 			<ul className="divide-y divide-rule panel">
-				{KEY_ROWS.map((row) => (
-					<KeyRow key={row.name} row={row} status={view.credentials[row.name]} onChanged={onChanged} />
+				{shown.map((id) => (
+					<KeyRow key={id} row={keyRowFor(id, s.customName)} status={view.credentials[id] ?? { source: "none", hint: "" }} onChanged={onChanged} />
 				))}
 			</ul>
+			{addable.length > 0 && (
+				<div className="mt-3 flex flex-wrap items-center gap-2">
+					<Select
+						value=""
+						onChange={(e) => e.target.value && setAdded((a) => [...a, e.target.value])}
+						className="w-auto"
+						aria-label="Add a key for another provider"
+					>
+						<option value="">Add a key for another provider…</option>
+						{addable.map((p) => (
+							<option key={p.id} value={p.id}>
+								{providerLabel(p.id, s.customName)}
+							</option>
+						))}
+					</Select>
+				</div>
+			)}
 		</Section>
 	);
 }
 
-function KeyRow({ row, status, onChanged }: { row: (typeof KEY_ROWS)[number]; status: SettingsView["credentials"][CredentialName]; onChanged: () => Promise<void> }) {
+function KeyRow({ row, status, onChanged }: { row: KeyRowInfo; status: CredentialStatus; onChanged: () => Promise<void> }) {
 	const [value, setValue] = useState("");
 	const [busy, setBusy] = useState<null | "save" | "clear" | "test">(null);
 	const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
@@ -250,10 +306,10 @@ function KeyRow({ row, status, onChanged }: { row: (typeof KEY_ROWS)[number]; st
 				<p className="mt-1 text-xs text-muted">{row.help}</p>
 			</div>
 			<div className="flex gap-2">
-				<Button onClick={() => call("save")} busy={busy === "save"} disabled={!value.trim() || busy !== null} variant="primary">
+				<Button onClick={() => call("save")} busy={busy === "save"} disabled={!value.trim() || busy !== null}>
 					Save
 				</Button>
-				<Button onClick={() => call("test")} busy={busy === "test"} disabled={busy !== null || (row.name !== "custom" && status.source === "none")}>
+				<Button onClick={() => call("test")} busy={busy === "test"} disabled={busy !== null || (!row.optional && status.source === "none")}>
 					Test
 				</Button>
 				{status.source === "saved" && (

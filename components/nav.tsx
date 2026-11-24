@@ -21,7 +21,7 @@ function isActive(pathname: string, href: string): boolean {
 export function Nav() {
 	const pathname = usePathname();
 	const { view, loadError } = useApp();
-	const needsKey = view && view.settings.mainModel.provider !== "custom" && view.credentials[view.settings.mainModel.provider].source === "none";
+	const needsKey = view && view.settings.mainModel.provider !== "custom" && (view.credentials[view.settings.mainModel.provider]?.source ?? "none") === "none";
 
 	return (
 		<header className="sticky top-0 z-(--z-sticky-nav) border-b border-rule bg-paper/95 backdrop-blur-sm">

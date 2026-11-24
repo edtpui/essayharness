@@ -28,7 +28,7 @@ npm run dev
 
 Open http://localhost:3400 and add your keys in **Settings**:
 
-- **Anthropic** for Claude (the default writing model is `claude-opus-5-5`), or **OpenAI**, or any **OpenAI-compatible endpoint** — e.g. Ollama at `http://localhost:11434/v1` for fully local models. A second, cheaper model can be set for sorting notes.
+- **Anthropic** for Claude (the default writing model is `claude-opus-5-5`), or any of the other API-key providers EssayHarness offers (OpenAI, Google Gemini, OpenRouter, xAI, Mistral, DeepSeek, Groq, Together, Fireworks, Cerebras, Hugging Face, NVIDIA, Baseten, Vercel AI Gateway, OpenCode, Meta, Moonshot, Kimi, MiniMax, Z.AI, Ant Ling, Qwen and Xiaomi token plans), or any **OpenAI-compatible endpoint** — e.g. Ollama at `http://localhost:11434/v1` for fully local models. A second, cheaper model can be set for sorting notes.
 - **Deepgram** for dictation. The key needs **Member** permission or higher, because the app mints short-lived browser tokens from it (`/v1/auth/grant`); audio goes from the browser to Deepgram directly and never through this server.
 
 For a production build: `npm run build` then `npm start` (both bind to 127.0.0.1:3400).

@@ -58,7 +58,11 @@ export function extractPrompt(): string {
 
 /* ---------- Planning: brief + bank → angles, outline, gap questions ---------- */
 
-export function planSystem(maxQuestions: number): string {
+export function planSystem(maxQuestions: number | null): string {
+	const howMany =
+		maxQuestions === null
+			? "Ask as many questions as the essay genuinely needs, and no more: each one should change what you can write. Most important first."
+			: `Ask at most ${maxQuestions} questions, most important first.`;
 	return `You are a scholarship essay strategist working from an applicant's experience bank.
 
 Given the essay brief and the applicant's material, do four things:
@@ -73,7 +77,7 @@ Good gap questions are concrete, answerable from memory, and ask for one thing a
 - motivation and reflection ("Why did that matter to you then? Does it still?")
 - the link to the scholarship's values or to the applicant's goals
 - anything the prompt explicitly asks that the material does not answer
-Do not ask about things the material already answers, things listed under previous questions, or details the essay would not use. Ask at most ${maxQuestions} questions, most important first. Mark a question "critical" when the recommended angle cannot be written well without it, otherwise "helpful". It is fine to ask none.
+Do not ask about things the material already answers, things listed under previous questions, or details the essay would not use. ${howMany} Mark a question "critical" when the recommended angle cannot be written well without it, otherwise "helpful". It is fine to ask none.
 
 Set "ready" to true when a strong, fully grounded draft of the recommended angle can be written now, even if helpful questions remain.
 

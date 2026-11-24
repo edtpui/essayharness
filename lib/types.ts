@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isProviderId } from "./providers";
 
 /* Shared record shapes. Every stored file is validated against these on read,
  * so new optional fields must carry a default to keep older files readable. */
@@ -275,17 +276,11 @@ export const InterviewSchema = z.object({
 });
 export type Interview = z.infer<typeof InterviewSchema>;
 
-export const PROVIDERS = ["anthropic", "openai", "custom"] as const;
-export type Provider = (typeof PROVIDERS)[number];
-
-export const PROVIDER_LABELS: Record<Provider, string> = {
-	anthropic: "Anthropic (Claude)",
-	openai: "OpenAI",
-	custom: "OpenAI-compatible endpoint",
-};
+/** A model provider id from lib/providers.ts. */
+export type Provider = string;
 
 export const ModelRefSchema = z.object({
-	provider: z.enum(PROVIDERS),
+	provider: z.string().refine(isProviderId, "Unknown provider"),
 	model: z.string().trim().min(1, "Choose a model").max(200),
 });
 export type ModelRef = z.infer<typeof ModelRefSchema>;
@@ -297,7 +292,8 @@ export const SettingsSchema = z.object({
 	customBaseUrl: z.string().default("http://localhost:11434/v1"),
 	customName: z.string().default("Local model"),
 	dictationLanguage: z.string().default("en"),
-	maxQuestions: z.number().int().min(1).max(12).default(6),
+	/** The most gap questions one planning pass may ask; null lets the model decide. */
+	maxQuestions: z.number().int().min(1).max(12).nullable().default(6),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 
@@ -311,11 +307,11 @@ export const SettingsInputSchema = z.object({
 		.refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Base URL must start with http:// or https://"),
 	customName: z.string().trim().max(100),
 	dictationLanguage: z.string().trim().min(2).max(20),
-	maxQuestions: z.number().int().min(1).max(12),
+	maxQuestions: z.number().int().min(1).max(12).nullable(),
 });
 
-export const CREDENTIALS = ["anthropic", "openai", "custom", "deepgram"] as const;
-export type CredentialName = (typeof CREDENTIALS)[number];
+/** A provider id, or "deepgram". */
+export type CredentialName = string;
 
 export interface CredentialStatus {
 	source: "saved" | "env" | "none";
@@ -324,7 +320,7 @@ export interface CredentialStatus {
 
 export interface SettingsView {
 	settings: Settings;
-	credentials: Record<CredentialName, CredentialStatus>;
+	credentials: Record<string, CredentialStatus>;
 	dataDir: string;
 }
 
