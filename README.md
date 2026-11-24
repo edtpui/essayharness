@@ -1,4 +1,4 @@
-# Scholarship Essays
+# EssayHarness
 
 Dictate your life experiences once, keep them in a local experience bank, and draft scholarship essays and personal statements from them. The essay agent plans each essay against your bank, asks you about the specifics it doesn't have yet, and only writes what your own material supports.
 
