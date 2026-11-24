@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "./app-context";
+import { ThemeSwitch } from "./theme-switch";
 import { cx } from "./ui";
 
 const LINKS = [
@@ -51,6 +52,7 @@ export function Nav() {
 						})}
 					</ul>
 				</nav>
+				<ThemeSwitch />
 				<div className="hidden shrink-0 text-sm lg:block">
 					{loadError ? (
 						<span className="text-error">{loadError}</span>

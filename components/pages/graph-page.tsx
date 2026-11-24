@@ -205,7 +205,7 @@ export function GraphPage() {
 												y1={a.y}
 												x2={b.x}
 												y2={b.y}
-												stroke={lit ? "var(--accent)" : "var(--border-strong)"}
+												stroke={lit ? "var(--color-accent)" : "var(--color-rule-2)"}
 												strokeOpacity={focusSet && !lit ? 0.15 : lit ? 0.9 : 0.55}
 												strokeWidth={(lit ? 1.6 : 1) * labelScale}
 												strokeDasharray={e.kind === "from" ? `${4 * labelScale} ${3 * labelScale}` : undefined}
@@ -219,7 +219,7 @@ export function GraphPage() {
 										if (!p) return null;
 										const dim = (focusSet && !focusSet.has(n.id)) || (matches && !matches.has(n.id));
 										const r = RADIUS[n.kind] * labelScale;
-										const fill = n.kind === "experience" ? CATEGORY_COLORS[n.category ?? "other"] : n.kind === "essay" ? "var(--accent)" : "var(--surface)";
+										const fill = n.kind === "experience" ? CATEGORY_COLORS[n.category ?? "other"] : n.kind === "essay" ? "var(--color-accent)" : "var(--color-paper)";
 										const showLabel = n.kind === "experience" || n.kind === "essay" || n.kind === "document" || focusSet?.has(n.id) || matches?.has(n.id);
 										return (
 											<g
@@ -235,14 +235,14 @@ export function GraphPage() {
 												}}
 											>
 												{n.kind === "document" ? (
-													<rect x={p.x - r} y={p.y - r} width={r * 2} height={r * 2} rx={r * 0.25} fill={fill} stroke="var(--muted)" strokeWidth={1.2 * labelScale} />
+													<rect x={p.x - r} y={p.y - r} width={r * 2} height={r * 2} rx={r * 0.25} fill={fill} stroke="var(--color-muted)" strokeWidth={1.2 * labelScale} />
 												) : (
 													<circle
 														cx={p.x}
 														cy={p.y}
 														r={r}
 														fill={fill}
-														stroke={n.id === selected ? "var(--text)" : n.kind === "skill" ? "var(--accent)" : n.kind === "person" ? "var(--warn)" : "var(--bg)"}
+														stroke={n.id === selected ? "var(--color-ink)" : n.kind === "skill" ? "var(--color-accent)" : n.kind === "person" ? "var(--color-warn)" : "var(--color-paper)"}
 														strokeWidth={(n.id === selected ? 2.5 : 1.2) * labelScale}
 													/>
 												)}
@@ -251,7 +251,7 @@ export function GraphPage() {
 														x={p.x + r + 3 * labelScale}
 														y={p.y + 4 * labelScale}
 														fontSize={(n.kind === "experience" || n.kind === "essay" ? 12 : 10.5) * labelScale}
-														fill={n.kind === "skill" || n.kind === "person" ? "var(--muted)" : "var(--text)"}
+														fill={n.kind === "skill" || n.kind === "person" ? "var(--color-muted)" : "var(--color-ink)"}
 														fontWeight={n.kind === "essay" ? 600 : 400}
 													>
 														{n.label.length > 34 ? `${n.label.slice(0, 33)}…` : n.label}

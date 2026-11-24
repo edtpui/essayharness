@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Familjen_Grotesk, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import { AppProvider } from "@/components/app-context";
 import { Nav } from "@/components/nav";
+import { THEME_SCRIPT } from "@/components/theme-switch";
 import "./globals.css";
 
 // Self-hosted at build time: no request to Google when the app runs.
@@ -17,7 +18,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
-		<html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+		<html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
+			<head>
+				<script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+			</head>
 			<body className="min-h-screen">
 				<AppProvider>
 					<Nav />

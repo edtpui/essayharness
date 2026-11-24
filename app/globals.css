@@ -32,6 +32,71 @@
 	--bar-height: 56px;
 }
 
+/* Dark mode: graphite paper, light ink, a brighter cobalt. Follows the system
+ * unless the switch in the top bar sets data-theme on <html>. */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		color-scheme: dark;
+		--color-paper: oklch(17.5% 0.02 262);
+		--color-paper-2: oklch(20.5% 0.022 262);
+		--color-paper-3: oklch(25% 0.024 262);
+		--color-ink: oklch(93% 0.01 250);
+		--color-ink-2: oklch(81% 0.015 252);
+		--color-muted: oklch(68% 0.02 256);
+		--color-rule: oklch(30% 0.022 260);
+		--color-rule-2: oklch(40% 0.024 258);
+		--color-accent: oklch(66% 0.16 256);
+		--color-accent-deep: oklch(73% 0.14 254);
+		--color-accent-edge: oklch(46% 0.16 260);
+		--color-accent-wash: oklch(28% 0.07 258);
+		--color-accent-ink: oklch(15% 0.03 262);
+		--color-focus: oklch(74% 0.15 256);
+		--color-key-face: oklch(24.5% 0.022 262);
+		--color-key-edge: oklch(12% 0.02 262);
+		--color-error: oklch(71% 0.16 27);
+		--color-success: oklch(74% 0.13 150);
+		--color-warn: oklch(80% 0.13 78);
+		--color-error-wash: oklch(26% 0.06 27);
+		--color-success-wash: oklch(26% 0.05 150);
+		--color-warn-wash: oklch(27% 0.05 78);
+		--color-mark: oklch(44% 0.09 95);
+		--shadow-card: 0 1px 2px oklch(0% 0 0 / 0.45);
+		--shadow-key: 0 3px 0 0 var(--color-key-edge), 0 6px 8px -4px oklch(0% 0 0 / 0.55), inset 0 1px 0 oklch(100% 0 0 / 0.07);
+		--shadow-key-accent: 0 3px 0 0 var(--color-accent-edge), 0 6px 8px -4px oklch(0% 0 0 / 0.55), inset 0 1px 0 oklch(100% 0 0 / 0.2);
+		--shadow-key-press: inset 0 1px 2px oklch(0% 0 0 / 0.5);
+	}
+}
+:root[data-theme="dark"] {
+	color-scheme: dark;
+	--color-paper: oklch(17.5% 0.02 262);
+	--color-paper-2: oklch(20.5% 0.022 262);
+	--color-paper-3: oklch(25% 0.024 262);
+	--color-ink: oklch(93% 0.01 250);
+	--color-ink-2: oklch(81% 0.015 252);
+	--color-muted: oklch(68% 0.02 256);
+	--color-rule: oklch(30% 0.022 260);
+	--color-rule-2: oklch(40% 0.024 258);
+	--color-accent: oklch(66% 0.16 256);
+	--color-accent-deep: oklch(73% 0.14 254);
+	--color-accent-edge: oklch(46% 0.16 260);
+	--color-accent-wash: oklch(28% 0.07 258);
+	--color-accent-ink: oklch(15% 0.03 262);
+	--color-focus: oklch(74% 0.15 256);
+	--color-key-face: oklch(24.5% 0.022 262);
+	--color-key-edge: oklch(12% 0.02 262);
+	--color-error: oklch(71% 0.16 27);
+	--color-success: oklch(74% 0.13 150);
+	--color-warn: oklch(80% 0.13 78);
+	--color-error-wash: oklch(26% 0.06 27);
+	--color-success-wash: oklch(26% 0.05 150);
+	--color-warn-wash: oklch(27% 0.05 78);
+	--color-mark: oklch(44% 0.09 95);
+	--shadow-card: 0 1px 2px oklch(0% 0 0 / 0.45);
+	--shadow-key: 0 3px 0 0 var(--color-key-edge), 0 6px 8px -4px oklch(0% 0 0 / 0.55), inset 0 1px 0 oklch(100% 0 0 / 0.07);
+	--shadow-key-accent: 0 3px 0 0 var(--color-accent-edge), 0 6px 8px -4px oklch(0% 0 0 / 0.55), inset 0 1px 0 oklch(100% 0 0 / 0.2);
+	--shadow-key-press: inset 0 1px 2px oklch(0% 0 0 / 0.5);
+}
+
 body {
 	font-size: var(--text-md);
 }
