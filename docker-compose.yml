@@ -5,8 +5,8 @@ services:
     restart: unless-stopped
     init: true
     environment:
-      # Add the names you open the app under (e.g. your Tailscale machine name), comma-separated.
-      SE_ALLOWED_HOSTS: ""
+      # Host names you open the app under (e.g. your Tailscale name), from .env next to this file.
+      SE_ALLOWED_HOSTS: ${SE_ALLOWED_HOSTS:-}
     ports:
       # Loopback only; publish it to other devices with `tailscale serve`, not by binding 0.0.0.0.
       - "127.0.0.1:3400:3000"
