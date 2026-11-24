@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/edtpui/essayharness/releases/tag/v0.1.0"><img src="https://img.shields.io/github/v/release/edtpui/essayharness?color=e8a33d&style=flat-square" alt="Latest release"></a>
+  <a href="https://github.com/edtpui/essayharness/releases/tag/v0.2.0"><img src="https://img.shields.io/github/v/release/edtpui/essayharness?color=e8a33d&style=flat-square" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/edtpui/essayharness?style=flat-square" alt="License: AGPL-3.0"></a>
   <a href="https://github.com/edtpui/essayharness/releases"><img src="https://img.shields.io/github/downloads/edtpui/essayharness/total?style=flat-square" alt="Downloads"></a>
   <a href="https://github.com/edtpui/essayharness/stargazers"><img src="https://img.shields.io/github/stars/edtpui/essayharness?style=flat-square" alt="GitHub stars"></a>
@@ -22,12 +22,12 @@ Your own API keys, dictation streamed straight from your browser, plain-file loc
 
 | Platform | Get it |
 | --- | --- |
-| Windows | [EssayHarness Setup 0.1.0.exe](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness%20Setup%200.1.0.exe) |
-| macOS (Apple Silicon) | [EssayHarness-0.1.0-arm64.dmg](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness-0.1.0-arm64.dmg) |
-| macOS (Intel) | [EssayHarness-0.1.0.dmg](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness-0.1.0.dmg) |
-| Docker | `docker pull ghcr.io/edtpui/essayharness:0.1.0` |
+| Windows | [EssayHarness Setup 0.1.0.exe](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness%20Setup%200.2.0.exe) |
+| macOS (Apple Silicon) | [EssayHarness-0.2.0-arm64.dmg](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness-0.2.0-arm64.dmg) |
+| macOS (Intel) | [EssayHarness-0.2.0.dmg](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness-0.2.0.dmg) |
+| Docker | `docker pull ghcr.io/edtpui/essayharness:0.2.0` |
 
-Builds are currently unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch (on macOS, right-click the app and choose Open). See the [v0.1.0 release](https://github.com/edtpui/essayharness/releases/tag/v0.1.0) for details.
+Builds are currently unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch (on macOS, right-click the app and choose Open). See the [v0.2.0 release](https://github.com/edtpui/essayharness/releases/tag/v0.2.0) for details.
 
 ## Why EssayHarness
 
@@ -74,7 +74,7 @@ Keys can also come from environment variables (see `.env.example`); a key saved 
 
 ## Your data
 
-Everything lives in one folder, `%USERPROFILE%\.scholarship-essays` by default (set `SE_DATA_DIR` to move it). It lives outside the project folder on purpose, so tools or containers that can read your code don't see your notes and keys.
+Everything lives in one folder, `%USERPROFILE%\.essayharness` by default (set `SE_DATA_DIR` to move it). It lives outside the project folder on purpose, so tools or containers that can read your code don't see your notes and keys. Upgrading from v0.1.0: the folder was called `.scholarship-essays` before the rename; on first launch the app moves your existing folder to the new name automatically, so your bank comes with you.
 
 | Path | Contents |
 | --- | --- |
@@ -99,7 +99,7 @@ SE_ALLOWED_HOSTS=my-pc,my-pc.your-tailnet.ts.net
 
 ## Docker
 
-`docker compose up -d --build` builds a standalone image, keeps data in the `scholarship_essays_data` volume, and publishes on `127.0.0.1:3400`. From inside the container, Ollama on the host is `http://host.docker.internal:11434/v1`.
+`docker compose up -d --build` builds a standalone image, keeps data in the `essayharness_data` volume, and publishes on `127.0.0.1:3400`. From inside the container, Ollama on the host is `http://host.docker.internal:11434/v1`.
 
 ## Development
 

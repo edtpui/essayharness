@@ -1,7 +1,7 @@
 services:
-  scholarship-essays:
+  essayharness:
     build: .
-    container_name: scholarship-essays
+    container_name: essayharness
     restart: unless-stopped
     init: true
     environment:
@@ -14,7 +14,7 @@ services:
       # Lets the app reach Ollama on the host: base URL http://host.docker.internal:11434/v1
       - "host.docker.internal:host-gateway"
     volumes:
-      - scholarship_essays_data:/var/lib/scholarship-essays
+      - essayharness_data:/var/lib/essayharness
 
 volumes:
-  scholarship_essays_data:
+  essayharness_data:

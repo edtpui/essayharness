@@ -3,7 +3,7 @@
 // Starts the standalone Next.js server (server.js) on 127.0.0.1:3400 using
 // Electron's bundled Node runtime, waits for it to answer, then shows it in
 // a window. App data stays where the server expects it (default
-// ~/.scholarship-essays, override SE_DATA_DIR); nothing is written next to
+// ~/.essayharness, override SE_DATA_DIR); nothing is written next to
 // the app itself.
 
 import { app, BrowserWindow, dialog } from "electron";

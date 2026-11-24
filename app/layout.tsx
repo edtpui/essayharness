@@ -11,7 +11,7 @@ const body = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500"], variabl
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-outlier", display: "swap" });
 
 export const metadata: Metadata = {
-	title: "Scholarship Essays",
+	title: "EssayHarness",
 	description: "Dictate your life experiences into a local experience bank and draft grounded scholarship essays from it.",
 };
 

@@ -13,11 +13,11 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \
     PORT=3000 \
-    SE_DATA_DIR=/var/lib/scholarship-essays
+    SE_DATA_DIR=/var/lib/essayharness
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder --chown=node:node /app/public ./public
-RUN mkdir -p /var/lib/scholarship-essays && chown -R node:node /var/lib/scholarship-essays
+RUN mkdir -p /var/lib/essayharness && chown -R node:node /var/lib/essayharness
 USER node
 EXPOSE 3000
 CMD ["node", "server.js"]

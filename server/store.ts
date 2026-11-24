@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { existsSync, renameSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
@@ -12,8 +13,18 @@ import { HttpError } from "./errors";
 
 export function dataDir(): string {
 	const configured = process.env.SE_DATA_DIR?.trim();
+	if (configured) return path.resolve(/*turbopackIgnore: true*/ configured);
+	const dir = path.join(os.homedir(), ".essayharness");
+	// The data folder was called .scholarship-essays before the v0.2.0 rename;
+	// move an existing folder to the new name so nobody's bank is left behind.
+	const legacy = path.join(os.homedir(), ".scholarship-essays");
+	try {
+		if (!existsSync(dir) && existsSync(legacy)) renameSync(legacy, dir);
+	} catch {
+		if (existsSync(legacy)) return legacy;
+	}
 	// The data folder is runtime state outside the build; keep the bundler from tracing it.
-	return path.resolve(/*turbopackIgnore: true*/ configured || path.join(os.homedir(), ".scholarship-essays"));
+	return path.resolve(/*turbopackIgnore: true*/ dir);
 }
 
 const ID_PATTERN = /^[a-z]{1,4}_[a-f0-9]{12}$/;
