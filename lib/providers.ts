@@ -1,4 +1,4 @@
-/* Model providers, matching the API-key providers EssayHarness offers (its
+/* Model providers, the API-key providers this app offers (its
  * pi-ai catalog, v1.5.2). Anthropic is called through its own SDK; everything
  * else speaks the OpenAI API, mostly Chat Completions, and Meta the Responses
  * API. Providers whose native API is Anthropic- or Google-style use their
@@ -9,7 +9,7 @@ export type ProviderApi = "anthropic" | "chat" | "responses";
 export interface ProviderInfo {
 	id: string;
 	label: string;
-	/** Environment variable the key can come from (EssayHarness uses the same names). */
+	/** Environment variable the key can come from. */
 	envVar: string;
 	api: ProviderApi;
 	/** Fixed base URL; the custom endpoint takes its URL from Settings. */
