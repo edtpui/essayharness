@@ -1,12 +1,47 @@
-# EssayHarness
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="EssayHarness: dictate your stories once, draft scholarship essays that sound like you" width="100%">
+</p>
 
-Dictate your life experiences once, keep them in a local experience bank, and draft scholarship essays and personal statements from them. The essay agent plans each essay against your bank, asks you about the specifics it doesn't have yet, and only writes what your own material supports.
+<p align="center">
+  <a href="https://github.com/edtpui/essayharness/releases/tag/v0.1.0"><img src="https://img.shields.io/github/v/release/edtpui/essayharness?color=e8a33d&style=flat-square" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/edtpui/essayharness?style=flat-square" alt="License: AGPL-3.0"></a>
+  <a href="https://github.com/edtpui/essayharness/releases"><img src="https://img.shields.io/github/downloads/edtpui/essayharness/total?style=flat-square" alt="Downloads"></a>
+  <a href="https://github.com/edtpui/essayharness/stargazers"><img src="https://img.shields.io/github/stars/edtpui/essayharness?style=flat-square" alt="GitHub stars"></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D20.9-brightgreen?style=flat-square" alt="Node 20.9 or newer">
+</p>
 
-Your own API keys, Deepgram dictation streamed straight from the browser, local plain-file storage, and an agent that asks questions instead of guessing.
+<p align="center">
+  <strong>Your scholarship essays, written from your own stories, in your own voice, on your own machine.</strong>
+</p>
 
-Inspired by [LearnHarness](https://github.com/amosblomqvist/learnharness).
+Dictate your life experiences once and keep them in a local **experience bank**. When a scholarship prompt lands, the essay agent plans against your bank, asks you about the specifics it doesn't have yet, and drafts only what your own material supports. No invented achievements, no generic AI voice, and your notes never live on someone else's server.
+
+Your own API keys, dictation streamed straight from your browser, plain-file local storage, and an agent that asks questions instead of guessing.
+
+## Download
+
+| Platform | Get it |
+| --- | --- |
+| Windows | [EssayHarness Setup 0.1.0.exe](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness%20Setup%200.1.0.exe) |
+| macOS (Apple Silicon) | [EssayHarness-0.1.0-arm64.dmg](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness-0.1.0-arm64.dmg) |
+| macOS (Intel) | [EssayHarness-0.1.0.dmg](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness-0.1.0.dmg) |
+| Docker | `docker pull ghcr.io/edtpui/essayharness:0.1.0` |
+
+Builds are currently unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch (on macOS, right-click the app and choose Open). See the [v0.1.0 release](https://github.com/edtpui/essayharness/releases/tag/v0.1.0) for details.
+
+## Why EssayHarness
+
+- **Grounded, not generated.** Drafts are built only from your bank and your answers. A built-in fact check lists anything a draft claims that your material doesn't support.
+- **Your voice.** The drafter writes from your dictated notes, your saved quotes, and writing samples you mark, so essays read like you on your best day.
+- **Local first.** Everything is plain files in one folder on your machine. Bring your own model key, or run fully local models through Ollama and nothing but dictation leaves the machine.
+- **One bank, every application.** Tell a story once and reuse it across every scholarship, personal statement, and application prompt that asks for it.
+- **25+ model providers.** Claude, OpenAI, Gemini, OpenRouter, and many more, plus any OpenAI-compatible endpoint.
 
 ## How it works
+
+<p align="center">
+  <img src="docs/assets/flow.svg" alt="Capture, bank, draft" width="100%">
+</p>
 
 1. **Capture.** Talk through a story (or type, or import a résumé or past essay as `.txt`, `.md` or `.pdf`). Every note is saved first, then sorted in the background into **experiences**: what happened, what you did, outcomes, reflections, skills shown, people, and short quotes in your own words. *Interview me* asks about the themes your bank is missing (setbacks, leadership, service, goals, background…).
    **Upload essays and stories** (`.docx`, `.pdf`, `.txt`, `.md`, up to 20 at once, or drag them in): each is added to the bank and gets a candid review from the coach — what works, what's weak, how to strengthen it, and which prompts it could answer.
@@ -19,7 +54,7 @@ Inspired by [LearnHarness](https://github.com/amosblomqvist/learnharness).
    - **Revise** in your own words ("open with the night shift"), **Cut to limit**, **Edit** by hand, and **Check facts**, which lists anything in the draft your material doesn't support and highlights it.
    Every version is kept.
 
-## Run it
+## Run it from source
 
 Requires Node.js 20.9 or newer.
 
@@ -86,3 +121,15 @@ npm run build
 | Pages | `components/pages/` |
 
 With Claude models the app sends `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`), so a request that the requested model declines is retried server-side on a fallback model instead of failing.
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a dev environment and what makes a good pull request, and [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
+
+## License
+
+[AGPL-3.0](LICENSE). If you run a modified version of EssayHarness as a network service, you must make your source available to its users.
+
+## Credits
+
+Inspired by [LearnHarness](https://github.com/amosblomqvist/learnharness).

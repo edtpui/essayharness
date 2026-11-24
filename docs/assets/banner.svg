@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1526"/>
+      <stop offset="1" stop-color="#1d2c4e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="320" fill="url(#bg)"/>
+  <text x="1170" y="300" font-family="Georgia, 'Times New Roman', serif" font-size="340" fill="#ffffff" opacity="0.05">&#8220;</text>
+  <g transform="translate(84,84)">
+    <rect width="152" height="152" rx="34" fill="#e8a33d"/>
+    <path d="M76 22 L118 92 C118 118 99 134 76 134 C53 134 34 118 34 92 Z" fill="#101828"/>
+    <circle cx="76" cy="96" r="9" fill="#e8a33d"/>
+    <line x1="76" y1="104" x2="76" y2="128" stroke="#e8a33d" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <text x="284" y="168" font-family="Georgia, 'Times New Roman', serif" font-size="88" font-weight="bold" fill="#faf7f0">EssayHarness</text>
+  <rect x="288" y="192" width="120" height="5" rx="2.5" fill="#e8a33d"/>
+  <text x="284" y="242" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="29" fill="#c9d4e8">Dictate your stories once. Draft scholarship essays that sound like you.</text>
+</svg>

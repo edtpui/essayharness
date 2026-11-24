@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="300" viewBox="0 0 1240 300">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#b45309"/>
+    </marker>
+  </defs>
+  <g font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+    <rect x="10" y="30" width="370" height="240" rx="18" fill="#faf7f0" stroke="#e5ddcb" stroke-width="2"/>
+    <circle cx="64" cy="86" r="26" fill="#e8a33d"/>
+    <text x="64" y="97" font-size="30" font-weight="bold" fill="#101828" text-anchor="middle">1</text>
+    <text x="106" y="97" font-size="27" font-weight="bold" fill="#101828" letter-spacing="2">CAPTURE</text>
+    <text x="40" y="150" font-size="21" fill="#3c4658">Dictate, type, or import a résumé</text>
+    <text x="40" y="182" font-size="21" fill="#3c4658">or past essays. Every note is</text>
+    <text x="40" y="214" font-size="21" fill="#3c4658">saved verbatim, in your words.</text>
+    <line x1="392" y1="150" x2="438" y2="150" stroke="#b45309" stroke-width="5" marker-end="url(#arr)"/>
+    <rect x="450" y="30" width="370" height="240" rx="18" fill="#faf7f0" stroke="#e5ddcb" stroke-width="2"/>
+    <circle cx="504" cy="86" r="26" fill="#e8a33d"/>
+    <text x="504" y="97" font-size="30" font-weight="bold" fill="#101828" text-anchor="middle">2</text>
+    <text x="546" y="97" font-size="27" font-weight="bold" fill="#101828" letter-spacing="2">BANK</text>
+    <text x="480" y="150" font-size="21" fill="#3c4658">Notes are sorted into experiences:</text>
+    <text x="480" y="182" font-size="21" fill="#3c4658">what happened, what you did,</text>
+    <text x="480" y="214" font-size="21" fill="#3c4658">and what it shows about you.</text>
+    <line x1="832" y1="150" x2="878" y2="150" stroke="#b45309" stroke-width="5" marker-end="url(#arr)"/>
+    <rect x="890" y="30" width="340" height="240" rx="18" fill="#101828"/>
+    <circle cx="944" cy="86" r="26" fill="#e8a33d"/>
+    <text x="944" y="97" font-size="30" font-weight="bold" fill="#101828" text-anchor="middle">3</text>
+    <text x="986" y="97" font-size="27" font-weight="bold" fill="#faf7f0" letter-spacing="2">DRAFT</text>
+    <text x="920" y="150" font-size="21" fill="#dbe3f2">Plan against your bank, answer</text>
+    <text x="920" y="182" font-size="21" fill="#dbe3f2">the gap questions, then draft</text>
+    <text x="920" y="214" font-size="21" fill="#dbe3f2">and fact-check in your voice.</text>
+  </g>
+</svg>
