@@ -71,7 +71,7 @@ export const ExperienceInputSchema = z.object({
 });
 export type ExperienceInput = z.infer<typeof ExperienceInputSchema>;
 
-export const ENTRY_SOURCES = ["dictation", "typed", "interview", "import"] as const;
+export const ENTRY_SOURCES = ["dictation", "typed", "interview", "import", "chat"] as const;
 export type EntrySource = (typeof ENTRY_SOURCES)[number];
 
 export const ExtractionSchema = z.object({
@@ -194,6 +194,23 @@ export const AuditSchema = z.object({
 });
 export type Audit = z.infer<typeof AuditSchema>;
 
+export const CHAT_ACTIONS = ["none", "plan", "draft", "revise", "check"] as const;
+export type ChatAction = (typeof CHAT_ACTIONS)[number];
+
+export const ChatMessageSchema = z.object({
+	id: z.string(),
+	createdAt: isoDate,
+	role: z.enum(["user", "assistant"]),
+	text: z.string(),
+	/** User message saved into the bank as a note. */
+	entryId: z.string().nullable().default(null),
+	/** Assistant message: the work it did and what that produced. */
+	action: z.enum(CHAT_ACTIONS).default("none"),
+	versionId: z.string().nullable().default(null),
+	error: z.string().default(""),
+});
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
 export const EssaySchema = z.object({
 	id: z.string(),
 	createdAt: isoDate,
@@ -209,6 +226,7 @@ export const EssaySchema = z.object({
 	questions: z.array(QuestionSchema).default([]),
 	versions: z.array(VersionSchema).default([]),
 	audit: AuditSchema.nullable().default(null),
+	messages: z.array(ChatMessageSchema).default([]),
 });
 export type Essay = z.infer<typeof EssaySchema>;
 
@@ -292,7 +310,7 @@ export interface SettingsView {
 	dataDir: string;
 }
 
-export const USAGE_TASKS = ["extract", "plan", "interview", "draft", "revise", "tighten", "audit", "test"] as const;
+export const USAGE_TASKS = ["extract", "plan", "interview", "draft", "revise", "tighten", "audit", "chat", "test"] as const;
 export type UsageTask = (typeof USAGE_TASKS)[number];
 
 export interface UsageRecord {
@@ -320,6 +338,15 @@ export interface UsageSummary {
 }
 
 /** Streamed generation protocol: one JSON object per line. */
+/** Streamed chat turn protocol: one JSON object per line. */
+export type ChatEvent =
+	| { type: "message"; message: ChatMessage }
+	| { type: "status"; text: string }
+	| { type: "delta"; text: string }
+	| { type: "version"; version: Version }
+	| { type: "essay"; essay: Essay }
+	| { type: "error"; message: string };
+
 export type GenerationEvent =
 	| { type: "delta"; text: string }
 	| { type: "done"; version: Version }

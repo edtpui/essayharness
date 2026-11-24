@@ -4,7 +4,7 @@ import { HttpError } from "./errors";
  * Stop can reach the run that is in progress. In memory: a server restart
  * ends every run anyway. */
 
-export type RunKind = "plan" | "draft" | "revise" | "tighten" | "audit";
+export type RunKind = "plan" | "draft" | "revise" | "tighten" | "audit" | "chat";
 
 interface Run {
 	kind: RunKind;
@@ -21,6 +21,7 @@ const VERB: Record<RunKind, string> = {
 	revise: "revising",
 	tighten: "tightening",
 	audit: "fact-checking",
+	chat: "replying to a message in",
 };
 
 export function beginRun(key: string, kind: RunKind): AbortController {

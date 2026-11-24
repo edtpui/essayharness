@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ApiError, api, messageOf, streamGeneration } from "@/lib/api";
-import type { Audit, Entry, Essay, Experience, Question, Version } from "@/lib/types";
+import { ApiError, api, messageOf, streamGeneration, streamNdjson } from "@/lib/api";
+import type { Audit, ChatEvent, ChatMessage, Essay, Experience, Question, Version } from "@/lib/types";
 import { countCharacters, countWords, formatDateTime, formatLimit, formatUsd, measure } from "@/lib/text";
 import { BriefForm } from "../brief-form";
 import { DictationField } from "../dictation";
@@ -12,9 +12,10 @@ import { ChevronIcon, CopyIcon } from "../icons";
 import { Badge, Button, Elapsed, EmptyState, Notice, Section, TextArea, cx } from "../ui";
 import { useLocalDraft } from "../use-local-draft";
 
-type Busy = null | "plan" | "draft" | "revise" | "tighten" | "audit";
+type Busy = null | "chat" | "plan" | "tighten" | "audit";
 
 const RUN_LABEL: Record<string, string> = {
+	chat: "Working on your message…",
 	plan: "Planning…",
 	draft: "Writing a draft…",
 	revise: "Revising…",
@@ -22,32 +23,35 @@ const RUN_LABEL: Record<string, string> = {
 	audit: "Checking facts…",
 };
 
+function upsertMessage(essay: Essay, message: ChatMessage): Essay {
+	const exists = essay.messages.some((m) => m.id === message.id);
+	return { ...essay, messages: exists ? essay.messages.map((m) => (m.id === message.id ? message : m)) : [...essay.messages, message] };
+}
+
 export function EssayPage({ id }: { id: string }) {
 	const router = useRouter();
 	const [essay, setEssay] = useState<Essay | null>(null);
 	const [run, setRun] = useState<{ kind: string } | null>(null);
 	const [cost, setCost] = useState(0);
 	const [titles, setTitles] = useState<Record<string, string>>({});
-	const [answers, setAnswers] = useState<Record<string, Entry>>({});
 	const [error, setError] = useState<string | null>(null);
 	const [missing, setMissing] = useState(false);
 	const [busy, setBusy] = useState<Busy>(null);
+	const [status, setStatus] = useState<string | null>(null);
 	const [stream, setStream] = useState<string | null>(null);
 	const [versionId, setVersionId] = useState<string | null>(null);
 	const [editingBrief, setEditingBrief] = useState(false);
 
 	const load = useCallback(async () => {
 		try {
-			const [data, exps, notes] = await Promise.all([
+			const [data, exps] = await Promise.all([
 				api<{ essay: Essay; run: { kind: string } | null; costUsd: number }>(`/api/essays/${id}`),
 				api<{ experiences: Experience[] }>("/api/experiences"),
-				api<{ entries: Entry[] }>(`/api/entries?essayId=${id}`),
 			]);
 			setEssay(data.essay);
 			setRun(data.run);
 			setCost(data.costUsd);
 			setTitles(Object.fromEntries(exps.experiences.map((e) => [e.id, e.title])));
-			setAnswers(Object.fromEntries(notes.entries.map((e) => [e.id, e])));
 			setError(null);
 		} catch (err) {
 			if (err instanceof ApiError && err.status === 404) setMissing(true);
@@ -69,7 +73,47 @@ export function EssayPage({ id }: { id: string }) {
 	const versions = essay?.versions ?? [];
 	const selected = versions.find((v) => v.id === versionId) ?? versions.at(-1) ?? null;
 
-	const withBusy = async (kind: Exclude<Busy, null>, fn: () => Promise<void>) => {
+	const send = async (text: string, onAccepted: () => void): Promise<void> => {
+		setBusy("chat");
+		setError(null);
+		setStatus("Sending…");
+		setStream(null);
+		try {
+			await streamNdjson<ChatEvent>(`/api/essays/${id}/chat`, { text }, (event) => {
+				switch (event.type) {
+					case "message":
+						if (event.message.role === "user") onAccepted();
+						setEssay((e) => (e ? upsertMessage(e, event.message) : e));
+						break;
+					case "status":
+						setStatus(event.text);
+						break;
+					case "delta":
+						setStream((s) => (s ?? "") + event.text);
+						break;
+					case "version":
+						setStream(null);
+						setVersionId(event.version.id);
+						break;
+					case "essay":
+						setEssay(event.essay);
+						break;
+					case "error":
+						if (event.message !== "Stopped.") setError(event.message);
+						break;
+				}
+			});
+		} catch (err) {
+			setError(messageOf(err));
+		} finally {
+			setBusy(null);
+			setStatus(null);
+			setStream(null);
+			await load();
+		}
+	};
+
+	const withBusy = async (kind: Exclude<Busy, null | "chat">, fn: () => Promise<void>) => {
 		setBusy(kind);
 		setError(null);
 		try {
@@ -91,27 +135,20 @@ export function EssayPage({ id }: { id: string }) {
 			setEssay((await api<{ essay: Essay }>(`/api/essays/${id}/audit`, { body: { versionId: selected?.id } })).essay);
 		});
 
-	const generate = async (mode: "draft" | "revise" | "tighten", instruction?: string): Promise<boolean> => {
-		setBusy(mode);
-		setError(null);
-		setStream("");
-		const result: { version?: Version; error?: string } = {};
-		try {
-			await streamGeneration(`/api/essays/${id}/generate`, { mode, instruction, baseVersionId: mode === "draft" ? undefined : selected?.id }, (event) => {
+	const tighten = () =>
+		withBusy("tighten", async () => {
+			setStream("");
+			const result: { version?: Version; error?: string } = {};
+			await streamGeneration(`/api/essays/${id}/generate`, { mode: "tighten", baseVersionId: selected?.id }, (event) => {
 				if (event.type === "delta") setStream((s) => (s ?? "") + event.text);
 				else if (event.type === "done") result.version = event.version;
 				else result.error = event.message;
 			});
-		} catch (err) {
-			result.error = messageOf(err);
-		}
-		setStream(null);
-		setBusy(null);
-		if (result.error && result.error !== "Stopped.") setError(result.error);
-		await load();
-		if (result.version) setVersionId(result.version.id);
-		return Boolean(result.version);
-	};
+			setStream(null);
+			await load();
+			if (result.version) setVersionId(result.version.id);
+			if (result.error && result.error !== "Stopped.") throw new Error(result.error);
+		});
 
 	const stop = async () => {
 		try {
@@ -131,11 +168,10 @@ export function EssayPage({ id }: { id: string }) {
 	if (!essay) return error ? <Notice>{error}</Notice> : <p className="text-sm text-muted">Loading…</p>;
 
 	const working = busy !== null || run !== null;
-	const openQuestions = essay.questions.filter((q) => q.status === "open");
 
 	return (
 		<>
-			<header className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
+			<header className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
 				<div className="min-w-0">
 					<Link href="/essays" className="text-xs text-muted hover:text-text">
 						← Essays
@@ -170,8 +206,54 @@ export function EssayPage({ id }: { id: string }) {
 				</Notice>
 			)}
 
-			<div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+			<div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+				<ChatPanel essay={essay} busy={busy === "chat"} disabled={working && busy !== "chat"} status={status} onSend={send} onStop={stop} onShowVersion={setVersionId} />
+
 				<div className="min-w-0">
+					<DraftPanel
+						essay={essay}
+						selected={selected}
+						stream={stream}
+						busy={busy}
+						status={status}
+						disabled={working}
+						onSelectVersion={setVersionId}
+						onTighten={tighten}
+						onStop={stop}
+						onAudit={audit}
+						onManualSave={async (text) => {
+							const { essay: next } = await api<{ essay: Essay }>(`/api/essays/${id}/versions`, { body: { text } });
+							setEssay(next);
+							setVersionId(next.versions.at(-1)?.id ?? null);
+						}}
+					/>
+
+					<PlanPanel
+						essay={essay}
+						titles={titles}
+						busy={busy === "plan"}
+						disabled={working}
+						onPlan={plan}
+						onSelect={async (index) => {
+							try {
+								setEssay((await api<{ essay: Essay }>(`/api/essays/${id}/angle`, { method: "PUT", body: { index } })).essay);
+							} catch (err) {
+								setError(messageOf(err));
+							}
+						}}
+					/>
+
+					<QuestionList
+						essay={essay}
+						onStatus={async (q, next) => {
+							try {
+								setEssay((await api<{ essay: Essay }>(`/api/essays/${id}/questions/${q.id}`, { method: "PATCH", body: { status: next } })).essay);
+							} catch (err) {
+								setError(messageOf(err));
+							}
+						}}
+					/>
+
 					<Section
 						title="Brief"
 						actions={
@@ -199,29 +281,13 @@ export function EssayPage({ id }: { id: string }) {
 						)}
 					</Section>
 
-					<PlanPanel essay={essay} titles={titles} busy={busy === "plan"} disabled={working} onPlan={plan} onSelect={async (index) => {
-						try {
-							setEssay((await api<{ essay: Essay }>(`/api/essays/${id}/angle`, { method: "PUT", body: { index } })).essay);
-						} catch (err) {
-							setError(messageOf(err));
-						}
-					}} />
-
-					<QuestionHistory essay={essay} answers={answers} onReopen={async (q) => {
-						try {
-							setEssay((await api<{ essay: Essay }>(`/api/essays/${id}/questions/${q.id}`, { method: "PATCH", body: { status: "open" } })).essay);
-						} catch (err) {
-							setError(messageOf(err));
-						}
-					}} />
-
 					<div className="border-t border-border pt-4">
 						<Button
 							size="sm"
 							variant="danger"
 							disabled={working}
 							onClick={async () => {
-								if (!window.confirm(`Delete "${essay.title}" and all its drafts? Your answers stay in the experience bank.`)) return;
+								if (!window.confirm(`Delete "${essay.title}", its chat and all its drafts? What you told it stays in your experience bank.`)) return;
 								try {
 									await api(`/api/essays/${id}`, { method: "DELETE" });
 									router.push("/essays");
@@ -234,43 +300,132 @@ export function EssayPage({ id }: { id: string }) {
 						</Button>
 					</div>
 				</div>
-
-				<div className="min-w-0">
-					{openQuestions.length > 0 && <QuestionDock essay={essay} questions={openQuestions} disabled={working} onChanged={load} onError={setError} />}
-
-					{!essay.plan && busy !== "plan" && (
-						<Notice tone="info" className="mb-6">
-							<p className="font-medium">Start by planning.</p>
-							<p className="mt-1 text-muted">
-								The agent reads your experience bank against this prompt, proposes angles, and asks about anything the essay needs that you haven&apos;t told it yet.
-							</p>
-							<Button variant="primary" className="mt-3" onClick={plan} disabled={working}>
-								Plan this essay
-							</Button>
-						</Notice>
-					)}
-
-					<DraftPanel
-						essay={essay}
-						selected={selected}
-						stream={stream}
-						busy={busy}
-						disabled={working}
-						onSelectVersion={setVersionId}
-						onGenerate={generate}
-						onStop={stop}
-						onAudit={audit}
-						onManualSave={async (text) => {
-							const { essay: next } = await api<{ essay: Essay }>(`/api/essays/${id}/versions`, { body: { text } });
-							setEssay(next);
-							setVersionId(next.versions.at(-1)?.id ?? null);
-						}}
-					/>
-				</div>
 			</div>
 		</>
 	);
 }
+
+/* ---------- chat ---------- */
+
+const SUGGESTIONS = [
+	{ label: "Plan this essay", text: "Plan this essay. What angles do I have, and what do you need from me?" },
+	{ label: "Write a first draft", text: "Write a first draft from what you already know about me." },
+	{ label: "Tell it a story", text: "Here's a story I want to use: " },
+];
+
+function ChatPanel({
+	essay,
+	busy,
+	disabled,
+	status,
+	onSend,
+	onStop,
+	onShowVersion,
+}: {
+	essay: Essay;
+	busy: boolean;
+	disabled: boolean;
+	status: string | null;
+	onSend: (text: string, onAccepted: () => void) => Promise<void>;
+	onStop: () => void;
+	onShowVersion: (versionId: string) => void;
+}) {
+	const [text, setText] = useLocalDraft(`chat-${essay.id}`);
+	const listRef = useRef<HTMLDivElement>(null);
+	const versionNumber = useMemo(() => new Map(essay.versions.map((v, i) => [v.id, i + 1])), [essay.versions]);
+
+	useEffect(() => {
+		const el = listRef.current;
+		if (el) el.scrollTop = el.scrollHeight;
+	}, [essay.messages.length, status, busy]);
+
+	const submit = () => {
+		const body = text.trim();
+		if (!body || busy || disabled) return;
+		void onSend(body, () => setText(""));
+	};
+
+	return (
+		<section className="flex min-w-0 flex-col rounded-lg border border-border bg-surface lg:sticky lg:top-6 lg:h-[calc(100vh-9rem)]">
+			<div ref={listRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4" aria-live="polite">
+				{essay.messages.length === 0 && (
+					<div className="text-sm">
+						<p>
+							Tell me about this essay, or anything you want in it. What you tell me goes into your experience bank, I&apos;ll ask about what&apos;s
+							missing, and I&apos;ll write and rework the draft as we go.
+						</p>
+						<div className="mt-3 flex flex-wrap gap-2">
+							{SUGGESTIONS.map((s) => (
+								<Button
+									key={s.label}
+									size="sm"
+									disabled={busy || disabled}
+									onClick={() => (s.text.endsWith(": ") ? setText(s.text) : void onSend(s.text, () => undefined))}
+								>
+									{s.label}
+								</Button>
+							))}
+						</div>
+					</div>
+				)}
+				{essay.messages.map((m) =>
+					m.role === "user" ? (
+						<div key={m.id} className="flex flex-col items-end">
+							<p className="max-w-[85%] rounded-lg bg-accent-weak px-3 py-2 text-sm whitespace-pre-wrap">{m.text}</p>
+							{m.entryId && <span className="mt-1 text-[11px] text-muted">Saved to your bank</span>}
+						</div>
+					) : (
+						<div key={m.id} className="max-w-[95%] text-sm">
+							<p className="whitespace-pre-wrap">{m.text}</p>
+							<div className="mt-1 flex flex-wrap items-center gap-2">
+								{m.versionId && versionNumber.has(m.versionId) && (
+									<button type="button" className="text-xs text-accent underline" onClick={() => onShowVersion(m.versionId!)}>
+										Show draft v{versionNumber.get(m.versionId)}
+									</button>
+								)}
+								{m.error && <span className="text-xs text-danger">{m.error}</span>}
+							</div>
+						</div>
+					),
+				)}
+				{busy && status && (
+					<p className="text-xs text-muted">
+						{status} <Elapsed />
+					</p>
+				)}
+			</div>
+			<div className="border-t border-border p-3">
+				<DictationField
+					value={text}
+					onChange={setText}
+					rows={3}
+					micSize="sm"
+					placeholder="Dictate or type: a story, a detail you forgot, or what to change in the draft. Ctrl+Enter sends."
+					aria-label="Message"
+					onKeyDown={(e) => {
+						if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+							e.preventDefault();
+							submit();
+						}
+					}}
+					footer={
+						busy ? (
+							<Button variant="ghost" onClick={onStop}>
+								Stop
+							</Button>
+						) : (
+							<Button variant="primary" onClick={submit} disabled={!text.trim() || disabled}>
+								Send
+							</Button>
+						)
+					}
+				/>
+			</div>
+		</section>
+	);
+}
+
+/* ---------- side panels ---------- */
 
 function BriefView({ essay }: { essay: Essay }) {
 	const [open, setOpen] = useState(false);
@@ -334,16 +489,15 @@ function PlanPanel({
 	onSelect: (index: number) => void;
 }) {
 	const plan = essay.plan;
+	const [open, setOpen] = useState(false);
 	return (
 		<Section
 			title="Plan"
-			description={plan ? `Planned ${formatDateTime(plan.createdAt)} with ${plan.model}` : "Not planned yet."}
+			description={plan ? `${plan.ready ? "Enough material to draft" : "Needs more from you"} · planned ${formatDateTime(plan.createdAt)}` : "Not planned yet — ask in the chat, or plan here."}
 			actions={
-				plan && (
-					<Button size="sm" onClick={onPlan} busy={busy} disabled={disabled && !busy}>
-						Re-plan
-					</Button>
-				)
+				<Button size="sm" onClick={onPlan} busy={busy} disabled={disabled && !busy}>
+					{plan ? "Re-plan" : "Plan"}
+				</Button>
 			}
 		>
 			{busy && (
@@ -352,169 +506,90 @@ function PlanPanel({
 				</p>
 			)}
 			{plan && (
-				<div className="grid gap-3">
-					<div className="rounded-md border border-border bg-surface px-3 py-2.5 text-sm">
-						<div className="mb-1">{plan.ready ? <Badge tone="ok">Enough material to draft</Badge> : <Badge tone="warn">Needs your answers first</Badge>}</div>
-						<p>{plan.assessment}</p>
-					</div>
-					<fieldset className="grid gap-2">
-						<legend className="mb-1 text-xs font-medium text-muted">Angles — the draft follows the selected one</legend>
-						{plan.angles.map((angle, index) => {
-							const active = index === essay.selectedAngle;
-							return (
-								<label
-									key={`${angle.title}-${index}`}
-									className={cx("block cursor-pointer rounded-md border px-3 py-2.5 text-sm", active ? "border-accent bg-accent-weak/50" : "border-border bg-surface hover:bg-surface-2")}
-								>
-									<div className="flex items-start gap-2">
-										<input type="radio" name="angle" checked={active} onChange={() => onSelect(index)} disabled={disabled} className="mt-1" />
-										<div className="min-w-0">
-											<p className="font-medium">
-												{angle.title}
-												{index === plan.recommendedAngle && <span className="ml-2 align-middle"><Badge tone="accent">Recommended</Badge></span>}
-											</p>
-											<p className="mt-0.5 text-muted">{angle.pitch}</p>
-											{active && angle.outline.length > 0 && (
-												<ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[13px]">
-													{angle.outline.map((beat, i) => (
-														<li key={i}>
-															{beat.beat}
-															<ExperienceChips ids={beat.experienceIds} titles={titles} />
-														</li>
-													))}
-												</ol>
+				<fieldset className="grid gap-2">
+					<legend className="mb-1 text-xs text-muted">The draft follows the selected angle.</legend>
+					{plan.angles.map((angle, index) => {
+						const active = index === essay.selectedAngle;
+						return (
+							<label
+								key={`${angle.title}-${index}`}
+								className={cx("block cursor-pointer rounded-md border px-3 py-2.5 text-sm", active ? "border-accent bg-accent-weak/50" : "border-border bg-surface hover:bg-surface-2")}
+							>
+								<div className="flex items-start gap-2">
+									<input type="radio" name="angle" checked={active} onChange={() => onSelect(index)} disabled={disabled} className="mt-1" />
+									<div className="min-w-0">
+										<p className="font-medium">
+											{angle.title}
+											{index === plan.recommendedAngle && (
+												<span className="ml-2 align-middle">
+													<Badge tone="accent">Recommended</Badge>
+												</span>
 											)}
-										</div>
+										</p>
+										<p className="mt-0.5 text-muted">{angle.pitch}</p>
+										{active && angle.outline.length > 0 && (
+											<>
+												<button type="button" className="mt-2 flex items-center gap-1 text-xs text-muted hover:text-text" onClick={(e) => (e.preventDefault(), setOpen((o) => !o))}>
+													<ChevronIcon open={open} width={12} height={12} />
+													Outline
+												</button>
+												{open && (
+													<ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[13px]">
+														{angle.outline.map((beat, i) => (
+															<li key={i}>
+																{beat.beat}
+																<ExperienceChips ids={beat.experienceIds} titles={titles} />
+															</li>
+														))}
+													</ol>
+												)}
+											</>
+										)}
 									</div>
-								</label>
-							);
-						})}
-					</fieldset>
-				</div>
+								</div>
+							</label>
+						);
+					})}
+				</fieldset>
 			)}
 		</Section>
 	);
 }
 
-function sortQuestions(questions: Question[]): Question[] {
-	return [...questions].sort((a, b) => (a.priority === b.priority ? a.createdAt.localeCompare(b.createdAt) : a.priority === "critical" ? -1 : 1));
-}
-
-function QuestionDock({
-	essay,
-	questions,
-	disabled,
-	onChanged,
-	onError,
-}: {
-	essay: Essay;
-	questions: Question[];
-	disabled: boolean;
-	onChanged: () => Promise<void>;
-	onError: (message: string) => void;
-}) {
-	const ordered = sortQuestions(questions);
-	const current = ordered[0]!;
-	const [answer, setAnswer] = useLocalDraft(`answer-${essay.id}-${current.id}`);
-	const [busy, setBusy] = useState<null | "save" | "skip">(null);
-	const [saved, setSaved] = useState<string | null>(null);
-
-	const save = async () => {
-		setBusy("save");
-		setSaved(null);
-		try {
-			const { entry } = await api<{ entry: Entry }>("/api/entries", {
-				body: { text: answer, source: "interview", essayId: essay.id, questionId: current.id, extract: false },
-			});
-			setAnswer("");
-			setSaved("Saved to your bank.");
-			// Sorting runs in the background; the draft reads the answer text directly either way.
-			void api(`/api/entries/${entry.id}/extract`, { method: "POST" }).catch(() => undefined);
-			await onChanged();
-		} catch (err) {
-			onError(messageOf(err));
-		} finally {
-			setBusy(null);
-		}
-	};
-
-	const skip = async () => {
-		setBusy("skip");
-		try {
-			await api(`/api/essays/${essay.id}/questions/${current.id}`, { method: "PATCH", body: { status: "skipped" } });
-			await onChanged();
-		} catch (err) {
-			onError(messageOf(err));
-		} finally {
-			setBusy(null);
-		}
-	};
-
+function QuestionList({ essay, onStatus }: { essay: Essay; onStatus: (q: Question, status: "open" | "skipped") => void }) {
+	if (!essay.questions.length) return null;
+	const open = essay.questions.filter((q) => q.status === "open");
+	const answered = essay.questions.filter((q) => q.status === "answered").length;
+	const skipped = essay.questions.filter((q) => q.status === "skipped");
 	return (
-		<section className="mb-6 rounded-lg border border-accent/40 bg-surface p-4">
-			<div className="mb-2 flex items-center justify-between gap-2">
-				<h2 className="text-[15px] font-semibold">The agent has a question</h2>
-				<span className="text-xs text-muted">
-					{ordered.length} open · {current.priority === "critical" ? "needed for this angle" : "would strengthen it"}
-				</span>
-			</div>
-			<p className="text-[15px]">{current.question}</p>
-			{current.why && <p className="mt-1 text-[13px] text-muted">{current.why}</p>}
-			<div className="mt-3">
-				<DictationField
-					value={answer}
-					onChange={setAnswer}
-					rows={4}
-					placeholder="Dictate or type your answer. Specifics help: what you saw, said, did."
-					aria-label="Your answer"
-					disabled={busy !== null}
-					footer={
-						<>
-							<Button variant="ghost" onClick={skip} busy={busy === "skip"} disabled={busy !== null}>
+		<Section title="Questions" description={`${open.length} open · ${answered} answered${skipped.length ? ` · ${skipped.length} skipped` : ""}. Answer them in the chat, in your own words.`}>
+			{open.length > 0 && (
+				<ul className="divide-y divide-border rounded-md border border-border bg-surface text-sm">
+					{open.map((q) => (
+						<li key={q.id} className="flex items-start gap-2 px-3 py-2">
+							<div className="min-w-0 flex-1">
+								<p>{q.question}</p>
+								{q.priority === "critical" && <Badge tone="warn">Needed for this angle</Badge>}
+							</div>
+							<Button size="sm" variant="ghost" onClick={() => onStatus(q, "skipped")}>
 								Skip
 							</Button>
-							<Button variant="primary" onClick={save} busy={busy === "save"} disabled={!answer.trim() || busy !== null}>
-								Save answer
-							</Button>
-						</>
-					}
-				/>
-			</div>
-			{saved && <p className="mt-2 text-xs text-ok">{saved}</p>}
-			{ordered.length === 1 && !disabled && <p className="mt-2 text-xs text-muted">Last question. After it, re-plan to let the agent check for anything else, or write the draft.</p>}
-		</section>
-	);
-}
-
-function QuestionHistory({ essay, answers, onReopen }: { essay: Essay; answers: Record<string, Entry>; onReopen: (q: Question) => void }) {
-	const [open, setOpen] = useState(false);
-	const done = essay.questions.filter((q) => q.status !== "open");
-	if (!done.length) return null;
-	const answered = done.filter((q) => q.status === "answered").length;
-	return (
-		<Section title="Answered questions" description={`${answered} answered, ${done.length - answered} skipped`}>
-			<button type="button" onClick={() => setOpen((o) => !o)} className="mb-2 flex items-center gap-1 text-xs text-muted hover:text-text">
-				<ChevronIcon open={open} width={12} height={12} />
-				{open ? "Hide" : "Show"}
-			</button>
-			{open && (
-				<ul className="divide-y divide-border rounded-md border border-border bg-surface text-sm">
-					{done.map((q) => (
-						<li key={q.id} className="px-3 py-2.5">
-							<p className="font-medium">{q.question}</p>
-							{q.status === "answered" ? (
-								<p className="mt-1 line-clamp-3 whitespace-pre-wrap text-muted">{(q.entryId && answers[q.entryId]?.text) || "(answer saved)"}</p>
-							) : (
-								<p className="mt-1 text-xs text-muted">
-									Skipped ·{" "}
-									<button type="button" className="underline" onClick={() => onReopen(q)}>
-										Answer it after all
-									</button>
-								</p>
-							)}
 						</li>
 					))}
 				</ul>
+			)}
+			{skipped.length > 0 && (
+				<p className="mt-2 text-xs text-muted">
+					Skipped:{" "}
+					{skipped.map((q, i) => (
+						<span key={q.id}>
+							{i > 0 && " · "}
+							<button type="button" className="underline" onClick={() => onStatus(q, "open")} title="Reopen">
+								{q.question.length > 60 ? `${q.question.slice(0, 60)}…` : q.question}
+							</button>
+						</span>
+					))}
+				</p>
 			)}
 		</Section>
 	);
@@ -560,9 +635,10 @@ function DraftPanel({
 	selected,
 	stream,
 	busy,
+	status,
 	disabled,
 	onSelectVersion,
-	onGenerate,
+	onTighten,
 	onStop,
 	onAudit,
 	onManualSave,
@@ -571,14 +647,14 @@ function DraftPanel({
 	selected: Version | null;
 	stream: string | null;
 	busy: Busy;
+	status: string | null;
 	disabled: boolean;
 	onSelectVersion: (id: string) => void;
-	onGenerate: (mode: "draft" | "revise" | "tighten", instruction?: string) => Promise<boolean>;
+	onTighten: () => void;
 	onStop: () => void;
 	onAudit: () => void;
 	onManualSave: (text: string) => Promise<void>;
 }) {
-	const [feedback, setFeedback] = useLocalDraft(`feedback-${essay.id}`);
 	const [editing, setEditing] = useState(false);
 	const [editText, setEditText] = useState("");
 	const [copied, setCopied] = useState(false);
@@ -591,7 +667,7 @@ function DraftPanel({
 		return (
 			<Section title="Draft" actions={<Button size="sm" variant="ghost" onClick={onStop}>Stop</Button>}>
 				<p className="mb-2 text-xs text-muted">
-					{RUN_LABEL[busy ?? "draft"]} <Elapsed />
+					{status ?? RUN_LABEL[busy ?? "draft"]} <Elapsed />
 					{!stream && " · the model may think for a while before any text appears"}
 				</p>
 				<div className="rounded-md border border-border bg-surface px-5 py-4">
@@ -605,15 +681,7 @@ function DraftPanel({
 	if (!selected) {
 		return (
 			<Section title="Draft">
-				<EmptyState>
-					<p>No draft yet.</p>
-					<Button variant={essay.plan ? "primary" : "secondary"} className="mt-3" onClick={() => onGenerate("draft")} disabled={disabled}>
-						{essay.plan ? "Write the draft" : "Draft without a plan"}
-					</Button>
-					{essay.plan && essay.questions.some((q) => q.status === "open" && q.priority === "critical") && (
-						<p className="mt-2 text-xs text-warn">Some questions the agent marked as needed are still open.</p>
-					)}
-				</EmptyState>
+				<EmptyState>No draft yet. Ask for one in the chat whenever you&apos;re ready.</EmptyState>
 			</Section>
 		);
 	}
@@ -635,31 +703,21 @@ function DraftPanel({
 		<Section
 			title="Draft"
 			actions={
-				<div className="flex flex-wrap items-center gap-2">
-					<select
-						value={selected.id}
-						onChange={(e) => onSelectVersion(e.target.value)}
-						className="h-7 rounded-md border border-border bg-surface px-2 text-xs"
-						aria-label="Version"
-					>
-						{[...versions].reverse().map((v, i) => (
-							<option key={v.id} value={v.id}>
-								v{versions.length - i} · {KIND_LABEL[v.kind]} · {formatDateTime(v.createdAt)}
-							</option>
-						))}
-					</select>
-					<Button size="sm" variant="ghost" onClick={() => onGenerate("draft")} disabled={disabled}>
-						Fresh draft
-					</Button>
-				</div>
+				<select value={selected.id} onChange={(e) => onSelectVersion(e.target.value)} className="h-7 rounded-md border border-border bg-surface px-2 text-xs" aria-label="Version">
+					{[...versions].reverse().map((v, i) => (
+						<option key={v.id} value={v.id}>
+							v{versions.length - i} · {KIND_LABEL[v.kind]} · {formatDateTime(v.createdAt)}
+						</option>
+					))}
+				</select>
 			}
 		>
 			<div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
 				<LengthMeter text={selected.text} essay={essay} />
 				{selected.angle && <span className="text-xs text-muted">Angle: {selected.angle}</span>}
-				{selected.instruction && <span className="truncate text-xs text-muted" title={selected.instruction}>Asked: “{selected.instruction}”</span>}
-				{!isLatest && <Badge tone="warn">Older version</Badge>}
+				{!isLatest && <Badge tone="warn">Older version — the chat revises the latest</Badge>}
 			</div>
+			{selected.instruction && <p className="mb-2 line-clamp-2 text-xs text-muted" title={selected.instruction}>Change: {selected.instruction}</p>}
 
 			{editing ? (
 				<div className="grid gap-2">
@@ -710,7 +768,7 @@ function DraftPanel({
 							Check facts
 						</Button>
 						{over && essay.limit && (
-							<Button size="sm" variant="primary" onClick={() => onGenerate("tighten")} disabled={disabled}>
+							<Button size="sm" variant="primary" onClick={onTighten} disabled={disabled}>
 								Cut to {essay.limit.value} {essay.limit.unit}
 							</Button>
 						)}
@@ -721,34 +779,6 @@ function DraftPanel({
 
 			{audit && <AuditView audit={audit} />}
 			{essay.audit && !audit && <p className="mt-3 text-xs text-muted">The last fact check was for a different version.</p>}
-
-			{!editing && (
-				<div className="mt-6">
-					<h3 className="mb-1 text-sm font-semibold">Revise</h3>
-					<p className="mb-2 text-xs text-muted">
-						Say what to change, in your own words: “open with the night shift”, “less about grades, more about my brother”, “make the ending less neat”.
-						{!isLatest && " This revises the version shown."}
-					</p>
-					<DictationField
-						value={feedback}
-						onChange={setFeedback}
-						rows={3}
-						aria-label="What to change"
-						disabled={disabled}
-						footer={
-							<Button
-								variant="primary"
-								onClick={async () => {
-									if (await onGenerate("revise", feedback)) setFeedback("");
-								}}
-								disabled={disabled || !feedback.trim()}
-							>
-								Revise
-							</Button>
-						}
-					/>
-				</div>
-			)}
 		</Section>
 	);
 }
@@ -776,7 +806,7 @@ function AuditView({ audit }: { audit: Audit }) {
 					))}
 				</ul>
 			)}
-			<p className="mt-3 text-xs text-muted">Checked {formatDateTime(audit.createdAt)} with {audit.model}. Fix issues with Revise or Edit, or add the missing facts in Capture.</p>
+			<p className="mt-3 text-xs text-muted">Checked {formatDateTime(audit.createdAt)} with {audit.model}. Tell the chat what&apos;s actually true and it will fix the draft.</p>
 		</div>
 	);
 }

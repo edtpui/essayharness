@@ -355,7 +355,7 @@ function ImportSection({ onImported }: { onImported: () => Promise<void> }) {
 	);
 }
 
-const SOURCE_LABEL: Record<Entry["source"], string> = { dictation: "Dictated", typed: "Typed", interview: "Answer", import: "Imported" };
+const SOURCE_LABEL: Record<Entry["source"], string> = { dictation: "Dictated", typed: "Typed", interview: "Answer", import: "Imported", chat: "From essay chat" };
 
 function EntryRow({
 	entry,

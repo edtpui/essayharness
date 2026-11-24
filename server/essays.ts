@@ -33,6 +33,7 @@ import {
 	renderAnswers,
 	renderBank,
 	renderBrief,
+	renderConversation,
 	renderPreviousQuestions,
 	renderProfile,
 	renderVoiceSamples,
@@ -104,6 +105,7 @@ interface Material {
 	answers: AnswerPair[];
 	answerEntries: Entry[];
 	allEntries: Entry[];
+	conversation: string;
 }
 
 async function loadMaterial(id: string): Promise<Material> {
@@ -116,10 +118,12 @@ async function loadMaterial(id: string): Promise<Material> {
 	for (const q of essay.questions) {
 		const entry = q.status === "answered" && q.entryId ? byId.get(q.entryId) : undefined;
 		if (!entry) continue;
-		answers.push({ question: q.question, answer: entry.text });
 		answerEntries.push(entry);
+		// Answers given in the chat are already part of the conversation.
+		if (entry.source !== "chat") answers.push({ question: q.question, answer: entry.text });
 	}
-	return { essay, bank: byCreated(bank), answers, answerEntries, allEntries };
+	const conversation = renderConversation(essay.messages.filter((msg) => msg.role === "user").map((msg) => msg.text));
+	return { essay, bank: byCreated(bank), answers, answerEntries, allEntries, conversation };
 }
 
 export function currentAngle(essay: Essay): Angle | null {
@@ -164,6 +168,7 @@ async function draftContext(m: Material, chosen: Experience[]): Promise<string> 
 		renderVoiceSamples(voiceSamples(m, chosen)),
 		renderBrief(m.essay),
 		renderAnswers(m.answers),
+		m.conversation,
 	]
 		.filter(Boolean)
 		.join("\n\n");
@@ -209,10 +214,14 @@ export function mergeQuestions(existing: Question[], gaps: PlanResult["gaps"], m
 	return out;
 }
 
-export async function planEssay(id: string): Promise<Essay> {
-	return withRun(id, "plan", async (signal) => {
+export function planEssay(id: string): Promise<Essay> {
+	return withRun(id, "plan", (signal) => planCore(id, signal));
+}
+
+export async function planCore(id: string, signal?: AbortSignal): Promise<Essay> {
+	{
 		const m = await loadMaterial(id);
-		if (!m.bank.length && !m.answers.length) {
+		if (!m.bank.length && !m.answers.length && !m.conversation) {
 			throw new HttpError(400, "Your experience bank is empty. Capture a few experiences first so there is something to plan from.");
 		}
 		const [settings, profile, ref] = await Promise.all([getSettings(), getProfile(), resolveModel("main")]);
@@ -221,6 +230,7 @@ export async function planEssay(id: string): Promise<Essay> {
 			renderBank(m.bank).text,
 			renderBrief(m.essay),
 			renderAnswers(m.answers),
+			m.conversation,
 			renderPreviousQuestions(m.essay.questions),
 		]
 			.filter(Boolean)
@@ -256,7 +266,7 @@ export async function planEssay(id: string): Promise<Essay> {
 			selectedAngle: plan.recommendedAngle,
 			questions: mergeQuestions(e.questions, plan.gaps, settings.maxQuestions, now),
 		}));
-	});
+	}
 }
 
 /* ---------- draft, revise, tighten ---------- */
@@ -267,18 +277,27 @@ export interface GenerateInput {
 	baseVersionId?: string;
 }
 
-export async function generateVersion(id: string, input: GenerateInput, onDelta: (text: string) => void): Promise<Version> {
+export function generateVersion(id: string, input: GenerateInput, onDelta: (text: string) => void): Promise<Version> {
 	const kind: RunKind = input.mode;
-	return withRun(id, kind, async (signal) => {
+	return withRun(id, kind, (signal) => generateCore(id, input, onDelta, signal));
+}
+
+export async function generateCore(id: string, input: GenerateInput, onDelta: (text: string) => void, signal?: AbortSignal): Promise<Version> {
+	{
 		const m = await loadMaterial(id);
 		const angle = currentAngle(m.essay);
 		const chosen = selectedExperiences(m, angle);
-		if (!chosen.length && !m.answers.length) throw new HttpError(400, "There is no material to write from yet. Capture some experiences first.");
+		if (!chosen.length && !m.answers.length && !m.conversation) throw new HttpError(400, "There is no material to write from yet. Capture some experiences first.");
 
 		let prompt: string;
 		let instruction = "";
 		if (input.mode === "draft") {
-			prompt = draftPrompt(renderAngle(angle));
+			instruction = input.instruction?.trim() ?? "";
+			prompt = draftPrompt(renderAngle(angle) + (instruction ? `
+
+<applicant_request>
+${instruction}
+</applicant_request>` : ""));
 		} else {
 			const base = input.baseVersionId ? m.essay.versions.find((v) => v.id === input.baseVersionId) : m.essay.versions.at(-1);
 			if (!base) throw new HttpError(400, "There is no draft to revise yet.");
@@ -320,12 +339,12 @@ export async function generateVersion(id: string, input: GenerateInput, onDelta:
 			words: countWords(text),
 			characters: countCharacters(text.trim()),
 			model,
-			instruction: input.mode === "revise" ? instruction : "",
+			instruction: input.mode === "tighten" ? "" : instruction,
 			angle: angle?.title ?? "",
 		});
 		await essays.update(id, "Essay", (e) => ({ ...e, updatedAt: version.createdAt, versions: [...e.versions, version] }));
 		return version;
-	});
+	}
 }
 
 export async function saveManualVersion(id: string, text: string): Promise<Essay> {
@@ -350,15 +369,19 @@ export async function saveManualVersion(id: string, text: string): Promise<Essay
 
 /* ---------- fact check ---------- */
 
-export async function auditEssay(id: string, versionId?: string): Promise<Essay> {
-	return withRun(id, "audit", async (signal) => {
+export function auditEssay(id: string, versionId?: string): Promise<Essay> {
+	return withRun(id, "audit", (signal) => auditCore(id, versionId, signal));
+}
+
+export async function auditCore(id: string, versionId?: string, signal?: AbortSignal): Promise<Essay> {
+	{
 		const m = await loadMaterial(id);
 		const version = versionId ? m.essay.versions.find((v) => v.id === versionId) : m.essay.versions.at(-1);
 		if (!version) throw new HttpError(400, "There is no draft to check yet.");
 		const ref = await resolveModel("main");
 		const profile = await getProfile();
 		// Check against everything the applicant has said, not only the chosen angle's material.
-		const context = [renderProfile(profile), renderBank(m.bank).text, renderVoiceSamples(voiceSamples(m, m.bank)), renderAnswers(m.answers)]
+		const context = [renderProfile(profile), renderBank(m.bank).text, renderVoiceSamples(voiceSamples(m, m.bank)), renderAnswers(m.answers), m.conversation]
 			.filter(Boolean)
 			.join("\n\n");
 		const { object, model } = await generateObject(
@@ -382,5 +405,5 @@ export async function auditEssay(id: string, versionId?: string): Promise<Essay>
 			...e,
 			audit: { versionId: version.id, createdAt: nowIso(), model, summary: object.summary.trim(), issues },
 		}));
-	});
+	}
 }

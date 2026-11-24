@@ -120,3 +120,18 @@ export function renderNote(entry: Entry): string {
 	const question = entry.prompt.trim() ? `<question>${entry.prompt.trim()}</question>\n` : "";
 	return `<note ${attrs}>\n${question}${entry.text.trim()}\n</note>`;
 }
+
+/** What the applicant has said in this essay's chat: their own words, so valid material. Newest kept when long. */
+export function renderConversation(userMessages: string[], budget = 30_000): string {
+	const kept: string[] = [];
+	let used = 0;
+	for (let i = userMessages.length - 1; i >= 0; i--) {
+		const text = userMessages[i]!.trim();
+		if (!text) continue;
+		if (used + text.length > budget) break;
+		kept.unshift(text);
+		used += text.length;
+	}
+	if (!kept.length) return "";
+	return `<conversation note="What the applicant has told you in this essay's chat, oldest first">\n${kept.map((t) => `- ${t}`).join("\n")}\n</conversation>`;
+}

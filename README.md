@@ -8,7 +8,7 @@ It uses the same building blocks as EssayHarness: your own API keys, Deepgram di
 
 1. **Capture.** Talk through a story (or type, or import a résumé or past essay as `.txt`, `.md` or `.pdf`). Every note is saved first, then sorted in the background into **experiences**: what happened, what you did, outcomes, reflections, skills shown, people, and short quotes in your own words. *Interview me* asks about the themes your bank is missing (setbacks, leadership, service, goals, background…).
 2. **Experience bank.** Review and correct everything the agent extracted. Essays only use what's in the bank and in your answers, so fixing a wrong detail here fixes every future draft. *About you* holds facts every essay can use.
-3. **Essays.** Paste the prompt, the length limit and the scholarship's criteria.
+3. **Essays.** Paste the prompt, the length limit and the scholarship's criteria, then work on the essay in a **chat**, like EssayHarness: tell it stories, details you forgot, or what to change, by dictation or typing. Each message is kept, saved to your bank when it says something about you, and the coach replies and plans, drafts, revises or fact-checks as needed. The draft panel beside the chat always shows the current version.
    - **Plan:** the agent proposes two or three angles, outlines them against specific experiences, and lists the **gap questions** the essay needs answered.
    - **Questions:** answer by dictation or typing; answers go into the bank too. Re-plan to let it check for anything else.
    - **Draft:** streamed live, in your voice (it uses your quotes, dictated notes and any writing samples you mark), within the limit.

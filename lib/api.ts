@@ -52,11 +52,12 @@ export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
 }
 
 /** Reads the newline-delimited JSON stream from /generate. */
-export async function streamGeneration(
-	path: string,
-	body: unknown,
-	onEvent: (event: GenerationEvent) => void,
-): Promise<void> {
+export function streamGeneration(path: string, body: unknown, onEvent: (event: GenerationEvent) => void): Promise<void> {
+	return streamNdjson(path, body, onEvent);
+}
+
+/** POSTs JSON and delivers each line of a newline-delimited JSON response. */
+export async function streamNdjson<E>(path: string, body: unknown, onEvent: (event: E) => void): Promise<void> {
 	let res: Response;
 	try {
 		res = await fetch(path, {
@@ -83,11 +84,11 @@ export async function streamGeneration(
 		while ((newline = buffer.indexOf("\n")) !== -1) {
 			const line = buffer.slice(0, newline).trim();
 			buffer = buffer.slice(newline + 1);
-			if (line) onEvent(JSON.parse(line) as GenerationEvent);
+			if (line) onEvent(JSON.parse(line) as E);
 		}
 	}
 	const rest = buffer.trim();
-	if (rest) onEvent(JSON.parse(rest) as GenerationEvent);
+	if (rest) onEvent(JSON.parse(rest) as E);
 }
 
 export function messageOf(err: unknown): string {

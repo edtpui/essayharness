@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { createEntry, deleteEntry, extractEntry } from "@/server/bank";
-import { essays, experiences, saveSettings } from "@/server/db";
+import { entries, essays, experiences, saveSettings } from "@/server/db";
 import { HttpError, LlmError } from "@/server/errors";
 import { auditEssay, createEssay, generateVersion, planEssay, saveManualVersion, selectAngle } from "@/server/essays";
 import { generateInterview } from "@/server/interview";
@@ -63,6 +63,16 @@ function scripted(req: Captured): Reply {
 			summary: "One claim to check.",
 			issues: [{ excerpt: draft.split(/\s+/).slice(0, 3).join(" "), problem: "unsupported", explanation: "Not in your notes.", suggestion: "Cut it." }],
 		});
+	}
+	if (name === "chat_turn") {
+		const latest = /Applicant \(latest\): ([\s\S]*?)\n<\/conversation_history>/.exec(user)?.[1] ?? "";
+		const openQuestion = /<open_questions>\n\[(q_[a-f0-9]{12})\]/.exec(user)?.[1];
+		const turn = (action: string, instruction = "", saveAsNote = false, answeredQuestionIds: string[] = []) =>
+			reply({ reply: `Reply to: ${latest.slice(0, 30)}`, action, instruction, saveAsNote, answeredQuestionIds });
+		if (/^plan/i.test(latest)) return turn("plan");
+		if (/^write/i.test(latest)) return turn("draft", "Use the Saturday detail.");
+		if (/shorter/i.test(latest)) return turn("revise", "Make it shorter.");
+		return turn("none", "", true, openQuestion ? [openQuestion] : []);
 	}
 	if (name === "interview_questions") {
 		return reply({ questions: [{ question: "Who taught you the most about work?", theme: "Influences", why: "Common prompt." }] });
@@ -247,4 +257,67 @@ test("usage is recorded for every model call", async () => {
 	assert.ok(usage.calls >= 8, String(usage.calls));
 	assert.equal(usage.totalCostUsd, 0, "non-Anthropic calls are not priced");
 	assert.ok(usage.byTask.plan && usage.byTask.draft && usage.byTask.extract);
+});
+
+test("chat: a conversation plans, keeps new facts, drafts from them and revises", async () => {
+	const { chatTurn } = await import("@/server/chat");
+	const essay = await createEssay({ title: "Chat essay", scholarship: "", prompt: "Why do you deserve this award?", limit: null, criteria: "", notes: "" });
+	const events: string[] = [];
+	const deltas: string[] = [];
+	const emit = (e: { type: string; text?: string }) => {
+		events.push(e.type);
+		if (e.type === "delta" && e.text) deltas.push(e.text);
+	};
+
+	let state = await chatTurn(essay.id, "Plan this essay please", emit);
+	assert.ok(state.plan, "plan action ran");
+	assert.equal(state.messages.length, 3, "user, reply, plan summary");
+	assert.equal(state.messages[1]!.action, "plan");
+	assert.match(state.messages[2]!.text, /To write it well, tell me:\n1\. /);
+	const questionId = state.questions.find((q) => q.status === "open")!.id;
+
+	state = await chatTurn(essay.id, "I also said I would cover Saturdays during exams.", emit);
+	const userMsg = state.messages.at(-2)!;
+	assert.equal(userMsg.role, "user");
+	assert.ok(userMsg.entryId, "the new fact was saved to the bank as a note");
+	const note = await entries.get(userMsg.entryId!);
+	assert.equal(note?.source, "chat");
+	assert.equal(note?.text, "I also said I would cover Saturdays during exams.");
+	const answered = state.questions.find((q) => q.id === questionId)!;
+	assert.equal(answered.status, "answered");
+	assert.equal(answered.entryId, userMsg.entryId);
+	assert.equal(state.versions.length, 0, "adding a fact does not rewrite anything by itself");
+
+	state = await chatTurn(essay.id, "Write the draft now", emit);
+	assert.equal(state.versions.length, 1);
+	assert.equal(state.messages.at(-1)!.versionId, state.versions[0]!.id);
+	assert.equal(state.versions[0]!.instruction, "Use the Saturday detail.");
+	assert.ok(deltas.length > 0, "the draft streamed");
+	const draftCall = server.calls.findLast((c) => c.body?.stream)!;
+	assert.match(userText(draftCall), /<conversation[^>]*>[\s\S]*cover Saturdays during exams/, "the chat is drafting material");
+
+	state = await chatTurn(essay.id, "Make it a bit shorter", emit);
+	assert.equal(state.versions.length, 2);
+	assert.equal(state.versions[1]!.kind, "revision");
+	assert.match(userText(server.calls.findLast((c) => c.body?.stream)!), /<current_draft>/);
+
+	const turnCall = server.calls.findLast((c) => c.body?.response_format?.json_schema?.name === "chat_turn")!;
+	assert.match(userText(turnCall), /<current_draft version="1"/, "the coach sees the current draft");
+	assert.match(userText(turnCall), /Applicant \(latest\): Make it a bit shorter/);
+	assert.ok(events.includes("version") && events.includes("essay"));
+});
+
+test("chat: the message is saved even when the model call fails", async () => {
+	const { chatTurn } = await import("@/server/chat");
+	const essay = await createEssay({ title: "Failing", scholarship: "", prompt: "Prompt", limit: null, criteria: "", notes: "" });
+	const original = scripted;
+	server.respond(() => ({ status: 503, json: { error: { message: "down" } } }));
+	try {
+		await assert.rejects(chatTurn(essay.id, "This story must not be lost.", () => undefined));
+	} finally {
+		server.respond(original);
+	}
+	const saved = (await essays.get(essay.id))!;
+	assert.equal(saved.messages.length, 1);
+	assert.equal(saved.messages[0]!.text, "This story must not be lost.");
 });
