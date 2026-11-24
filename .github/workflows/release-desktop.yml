@@ -30,6 +30,9 @@ jobs:
       # No signing certificates are configured; do not let electron-builder
       # fail the macOS build hunting for one.
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      # electron-builder uploads the installers to the release itself on a
+      # tag build and needs the token for that.
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
