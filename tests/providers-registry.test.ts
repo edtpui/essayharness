@@ -11,16 +11,16 @@ import { z } from "zod";
 import { startFakeLlm, type FakeServer } from "./helpers/fake-llm";
 import { useTempDataDir } from "./helpers/temp-data";
 
-/** EssayHarness's API-key providers (pi-ai 1.5.2), minus Radius (its own protocol) and TypeSafe (no models). */
-const ESSAYHARNESS = [
+/** The API-key providers this app supports (the pi-ai 1.5.2 set), minus Radius (its own protocol) and TypeSafe (no models). */
+const EXPECTED_PROVIDERS = [
 	"ant-ling", "anthropic", "baseten", "cerebras", "deepseek", "fireworks", "google", "groq", "huggingface", "kimi-coding", "meta",
 	"minimax", "minimax-cn", "mistral", "moonshotai", "moonshotai-cn", "nvidia", "openai", "opencode", "opencode-go", "openrouter",
 	"qwen-token-plan", "qwen-token-plan-cn", "qwen-token-plan-individual", "qwen-token-plan-individual-cn", "together",
 	"vercel-ai-gateway", "xai", "xiaomi", "xiaomi-token-plan-ams", "xiaomi-token-plan-cn", "xiaomi-token-plan-sgp", "zai", "zai-coding-cn",
 ];
 
-test("every EssayHarness API-key provider is available, with an https endpoint and an env var", () => {
-	for (const id of ESSAYHARNESS) {
+test("every supported API-key provider is available, with an https endpoint and an env var", () => {
+	for (const id of EXPECTED_PROVIDERS) {
 		assert.ok(isProviderId(id), id);
 		const info = providerInfo(id)!;
 		assert.match(info.baseURL, /^https:\/\//, id);
