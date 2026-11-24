@@ -1,0 +1,20 @@
+services:
+  scholarship-essays:
+    build: .
+    container_name: scholarship-essays
+    restart: unless-stopped
+    init: true
+    environment:
+      # Add the names you open the app under (e.g. your Tailscale machine name), comma-separated.
+      SE_ALLOWED_HOSTS: ""
+    ports:
+      # Loopback only; publish it to other devices with `tailscale serve`, not by binding 0.0.0.0.
+      - "127.0.0.1:3400:3000"
+    extra_hosts:
+      # Lets the app reach Ollama on the host: base URL http://host.docker.internal:11434/v1
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - scholarship_essays_data:/var/lib/scholarship-essays
+
+volumes:
+  scholarship_essays_data:
