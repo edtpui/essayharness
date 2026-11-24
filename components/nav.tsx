@@ -26,7 +26,8 @@ export function Nav() {
 	return (
 		<header className="sticky top-0 z-(--z-sticky-nav) border-b border-rule bg-paper/95 backdrop-blur-sm">
 			<div className="container flex h-(--bar-height) items-center gap-6">
-				<Link href="/" className="shrink-0 font-display text-lg font-semibold tracking-tight no-underline" aria-label="Scholarship Essays, home">
+				<Link href="/" className="flex shrink-0 items-center gap-2 font-display text-lg font-semibold tracking-tight no-underline" aria-label="Scholarship Essays, home">
+					<img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
 					Scholarship Essays
 				</Link>
 				<nav aria-label="Main" className="min-w-0 flex-1 overflow-x-auto">
