@@ -314,11 +314,7 @@ export function MicButton({
 			onClick={onClick}
 			disabled={disabled || phase === "stopping"}
 			aria-pressed={live}
-			className={cx(
-				"inline-flex items-center gap-1.5 rounded-full border font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-				size === "sm" ? "h-7 px-2.5 text-[13px]" : "h-9 px-3.5 text-sm",
-				live ? "mic-live border-danger bg-danger-weak text-danger" : "border-border-strong bg-surface text-text hover:bg-surface-2",
-			)}
+			className={cx("key", size === "sm" && "key--sm", live && "key--live")}
 		>
 			{live ? <StopIcon /> : <MicIcon />}
 			{label}
@@ -371,7 +367,7 @@ export function DictationField({ value, onChange, onDictated, micSize = "md", fo
 				{dictation.interim && <span className="min-w-0 flex-1 truncate text-sm text-muted italic">{dictation.interim}</span>}
 				{footer && <div className="ml-auto flex items-center gap-2">{footer}</div>}
 			</div>
-			{dictation.error && <p className="text-xs text-danger">{dictation.error}</p>}
+			{dictation.error && <p className="text-xs text-error">{dictation.error}</p>}
 		</div>
 	);
 }

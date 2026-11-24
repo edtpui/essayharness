@@ -1,0 +1,32 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "axes": "light/grotesk-sans/cool",
+  "hero": "none (app)",
+  "nav": "top bar, wordmark and five destinations",
+  "footer": "none (app)",
+  "imagery": "none",
+  "photos": [],
+  "entry": "essay workspace: chat beside the draft",
+  "fingerprint": "cobalt-app-topbar-meter",
+  "sections": [
+   "capture",
+   "bank",
+   "graph",
+   "essays",
+   "essay workspace",
+   "settings"
+  ],
+  "signature": "the draft length meter, fifty cells filling toward the limit",
+  "waived": [
+   "39b",
+   "72"
+  ],
+  "prompt": "a writing tool where students dictate life experiences into a bank and chat with a coach to draft scholarship essays; utilitarian, technical",
+  "date": "2026-11-24"
+ }
+]

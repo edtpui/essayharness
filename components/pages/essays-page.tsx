@@ -57,8 +57,8 @@ export function EssaysPage() {
 			/>
 			{error && <Notice className="mb-4">{error}</Notice>}
 			{creating && (
-				<div className="mb-8 rounded-lg border border-border bg-surface p-4">
-					<h2 className="mb-3 text-[15px] font-semibold">New essay</h2>
+				<div className="mb-8 panel p-4">
+					<h2 className="mb-3 text-md font-semibold">New essay</h2>
 					<BriefForm
 						submitLabel="Create essay"
 						onSubmit={async (input) => {
@@ -74,14 +74,14 @@ export function EssaysPage() {
 			) : list.length === 0 ? (
 				!creating && <EmptyState>No essays yet.</EmptyState>
 			) : (
-				<ul className="divide-y divide-border rounded-md border border-border bg-surface">
+				<ul className="divide-y divide-rule panel">
 					{list.map((e) => (
 						<li key={e.id}>
-							<Link href={`/essays/${e.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-surface-2">
+							<Link href={`/essays/${e.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-paper-2">
 								<div className="min-w-0 flex-1">
 									<p className="text-sm font-medium">{e.title}</p>
 									<p className="text-xs text-muted">
-										{[e.scholarship, formatLimit(e.limit), `updated ${formatDate(e.updatedAt)}`].filter(Boolean).join(" · ")}
+										{[e.scholarship, formatLimit(e.limit), `updated ${formatDate(e.updatedAt)}`].filter(Boolean).join(", ")}
 									</p>
 								</div>
 								<div className="flex items-center gap-2 text-xs">
@@ -89,7 +89,7 @@ export function EssaysPage() {
 									{e.openQuestions > 0 && <Badge tone="warn">{e.openQuestions} open question{e.openQuestions === 1 ? "" : "s"}</Badge>}
 									{e.latestLength ? (
 										<Badge tone={e.latestLength.over ? "danger" : "ok"}>
-											v{e.versions} · {e.latestLength.count} {e.latestLength.unit}
+											v{e.versions}, {e.latestLength.count} {e.latestLength.unit}
 										</Badge>
 									) : (
 										e.planned && <Badge>No draft yet</Badge>

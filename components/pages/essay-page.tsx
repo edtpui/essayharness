@@ -171,13 +171,13 @@ export function EssayPage({ id }: { id: string }) {
 
 	return (
 		<>
-			<header className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
+			<header className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-rule pb-4">
 				<div className="min-w-0">
-					<Link href="/essays" className="text-xs text-muted hover:text-text">
+					<Link href="/essays" className="text-xs text-muted hover:text-ink">
 						← Essays
 					</Link>
-					<h1 className="mt-1 text-xl font-semibold tracking-tight">{essay.title}</h1>
-					<p className="mt-1 text-sm text-muted">{[essay.scholarship, formatLimit(essay.limit)].filter(Boolean).join(" · ")}</p>
+					<h1 className="mt-1 max-w-[48ch]">{essay.title}</h1>
+					<p className="mt-1 text-sm text-muted">{[essay.scholarship, formatLimit(essay.limit)].filter(Boolean).join(", ")}</p>
 				</div>
 				<div className="flex items-center gap-3 text-xs text-muted">
 					{cost > 0 && <span title="Estimated from list prices">≈ {formatUsd(cost)} spent on this essay</span>}
@@ -265,7 +265,7 @@ export function EssayPage({ id }: { id: string }) {
 						}
 					>
 						{editingBrief ? (
-							<div className="rounded-md border border-border bg-surface p-3">
+							<div className="panel p-3">
 								<BriefForm
 									initial={essay}
 									submitLabel="Save brief"
@@ -281,7 +281,7 @@ export function EssayPage({ id }: { id: string }) {
 						)}
 					</Section>
 
-					<div className="border-t border-border pt-4">
+					<div className="border-t border-rule pt-4">
 						<Button
 							size="sm"
 							variant="danger"
@@ -346,7 +346,7 @@ function ChatPanel({
 	};
 
 	return (
-		<section className="flex min-w-0 flex-col rounded-lg border border-border bg-surface lg:sticky lg:top-6 lg:h-[calc(100vh-9rem)]">
+		<section className="flex min-w-0 flex-col panel bg-paper-2 lg:sticky lg:top-[calc(var(--bar-height)+16px)] lg:h-[calc(100vh-var(--bar-height)-10rem)]">
 			<div ref={listRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4" aria-live="polite">
 				{essay.messages.length === 0 && (
 					<div className="text-sm">
@@ -371,8 +371,8 @@ function ChatPanel({
 				{essay.messages.map((m) =>
 					m.role === "user" ? (
 						<div key={m.id} className="flex flex-col items-end">
-							<p className="max-w-[85%] rounded-lg bg-accent-weak px-3 py-2 text-sm whitespace-pre-wrap">{m.text}</p>
-							{m.entryId && <span className="mt-1 text-[11px] text-muted">Saved to your bank</span>}
+							<p className="max-w-[85%] rounded-lg bg-accent-wash px-3 py-2 text-sm whitespace-pre-wrap">{m.text}</p>
+							{m.entryId && <span className="mt-1 text-xs text-muted">Saved to your bank</span>}
 						</div>
 					) : (
 						<div key={m.id} className="max-w-[95%] text-sm">
@@ -383,7 +383,7 @@ function ChatPanel({
 										Show draft v{versionNumber.get(m.versionId)}
 									</button>
 								)}
-								{m.error && <span className="text-xs text-danger">{m.error}</span>}
+								{m.error && <span className="text-xs text-error">{m.error}</span>}
 							</div>
 						</div>
 					),
@@ -394,7 +394,7 @@ function ChatPanel({
 					</p>
 				)}
 			</div>
-			<div className="border-t border-border p-3">
+			<div className="border-t border-rule p-3">
 				<DictationField
 					value={text}
 					onChange={setText}
@@ -430,16 +430,16 @@ function ChatPanel({
 function BriefView({ essay }: { essay: Essay }) {
 	const [open, setOpen] = useState(false);
 	return (
-		<div className="rounded-md border border-border bg-surface px-3 py-3 text-sm">
+		<div className="panel px-3 py-3 text-sm">
 			<p className="whitespace-pre-wrap">{essay.prompt}</p>
 			{(essay.criteria || essay.notes) && (
 				<>
-					<button type="button" className="mt-2 flex items-center gap-1 text-xs text-muted hover:text-text" onClick={() => setOpen((o) => !o)}>
+					<button type="button" className="text-button mt-1" onClick={() => setOpen((o) => !o)}>
 						<ChevronIcon open={open} width={12} height={12} />
 						Criteria and notes
 					</button>
 					{open && (
-						<div className="mt-2 grid gap-2 text-[13px]">
+						<div className="mt-2 grid gap-2 text-sm">
 							{essay.criteria && (
 								<div>
 									<p className="text-xs font-medium text-muted">Selection criteria</p>
@@ -465,7 +465,7 @@ function ExperienceChips({ ids, titles }: { ids: string[]; titles: Record<string
 	return (
 		<span className="mt-1 flex flex-wrap gap-1">
 			{ids.map((expId) => (
-				<Link key={expId} href={`/bank#${expId}`} className="rounded bg-surface-2 px-1.5 py-0.5 text-[11px] text-muted hover:text-text">
+				<Link key={expId} href={`/bank#${expId}`} className="rounded bg-paper-2 px-1.5 py-0.5 text-xs text-muted hover:text-ink">
 					{titles[expId] ?? "experience"}
 				</Link>
 			))}
@@ -493,7 +493,7 @@ function PlanPanel({
 	return (
 		<Section
 			title="Plan"
-			description={plan ? `${plan.ready ? "Enough material to draft" : "Needs more from you"} · planned ${formatDateTime(plan.createdAt)}` : "Not planned yet — ask in the chat, or plan here."}
+			description={plan ? `${plan.ready ? "Enough material to draft" : "Needs more from you"}. Planned ${formatDateTime(plan.createdAt)}.` : "Not planned yet. Ask in the chat, or plan here."}
 			actions={
 				<Button size="sm" onClick={onPlan} busy={busy} disabled={disabled && !busy}>
 					{plan ? "Re-plan" : "Plan"}
@@ -513,7 +513,7 @@ function PlanPanel({
 						return (
 							<label
 								key={`${angle.title}-${index}`}
-								className={cx("block cursor-pointer rounded-md border px-3 py-2.5 text-sm", active ? "border-accent bg-accent-weak/50" : "border-border bg-surface hover:bg-surface-2")}
+								className={cx("block cursor-pointer rounded-md border px-3 py-2.5 text-sm", active ? "border-accent bg-accent-wash" : "border-rule bg-paper hover:bg-paper-2")}
 							>
 								<div className="flex items-start gap-2">
 									<input type="radio" name="angle" checked={active} onChange={() => onSelect(index)} disabled={disabled} className="mt-1" />
@@ -529,12 +529,12 @@ function PlanPanel({
 										<p className="mt-0.5 text-muted">{angle.pitch}</p>
 										{active && angle.outline.length > 0 && (
 											<>
-												<button type="button" className="mt-2 flex items-center gap-1 text-xs text-muted hover:text-text" onClick={(e) => (e.preventDefault(), setOpen((o) => !o))}>
+												<button type="button" className="text-button mt-1" onClick={(e) => (e.preventDefault(), setOpen((o) => !o))}>
 													<ChevronIcon open={open} width={12} height={12} />
 													Outline
 												</button>
 												{open && (
-													<ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[13px]">
+													<ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm">
 														{angle.outline.map((beat, i) => (
 															<li key={i}>
 																{beat.beat}
@@ -562,9 +562,9 @@ function QuestionList({ essay, onStatus }: { essay: Essay; onStatus: (q: Questio
 	const answered = essay.questions.filter((q) => q.status === "answered").length;
 	const skipped = essay.questions.filter((q) => q.status === "skipped");
 	return (
-		<Section title="Questions" description={`${open.length} open · ${answered} answered${skipped.length ? ` · ${skipped.length} skipped` : ""}. Answer them in the chat, in your own words.`}>
+		<Section title="Questions" description={`${open.length} open, ${answered} answered${skipped.length ? `, ${skipped.length} skipped` : ""}. Answer them in the chat, in your own words.`}>
 			{open.length > 0 && (
-				<ul className="divide-y divide-border rounded-md border border-border bg-surface text-sm">
+				<ul className="divide-y divide-rule panel text-sm">
 					{open.map((q) => (
 						<li key={q.id} className="flex items-start gap-2 px-3 py-2">
 							<div className="min-w-0 flex-1">
@@ -583,7 +583,7 @@ function QuestionList({ essay, onStatus }: { essay: Essay; onStatus: (q: Questio
 					Skipped:{" "}
 					{skipped.map((q, i) => (
 						<span key={q.id}>
-							{i > 0 && " · "}
+							{i > 0 && "; "}
 							<button type="button" className="underline" onClick={() => onStatus(q, "open")} title="Reopen">
 								{q.question.length > 60 ? `${q.question.slice(0, 60)}…` : q.question}
 							</button>
@@ -620,13 +620,26 @@ const KIND_LABEL: Record<Version["kind"], string> = { draft: "Draft", revision: 
 function LengthMeter({ text, essay }: { text: string; essay: Essay }) {
 	const { count, unit, over } = measure(text, essay.limit);
 	const limit = essay.limit;
-	const near = limit && !over && count >= limit.value * 0.9;
+	const near = Boolean(limit && !over && count >= limit.value * 0.9);
+	const other = unit === "words" ? `${countCharacters(text).toLocaleString()} characters` : `${countWords(text).toLocaleString()} words`;
+	// Fifty cells: each one is a fiftieth of the limit; past the limit the overflow shows in red.
+	const cells = limit ? Math.min(50, Math.round((count / limit.value) * 50)) : 0;
+	const overCells = limit && over ? Math.min(50, Math.max(1, Math.round(((count - limit.value) / limit.value) * 50))) : 0;
 	return (
-		<span className={cx("text-xs tabular-nums", over ? "font-medium text-danger" : near ? "text-ok" : "text-muted")}>
-			{count.toLocaleString()}
-			{limit ? ` / ${limit.value.toLocaleString()}` : ""} {unit}
-			{unit === "words" ? ` · ${countCharacters(text).toLocaleString()} characters` : ` · ${countWords(text).toLocaleString()} words`}
-		</span>
+		<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+			{limit && (
+				<div className="meter w-[min(360px,100%)]" role="meter" aria-valuemin={0} aria-valuemax={limit.value} aria-valuenow={count} aria-label={`Length: ${count} of ${limit.value} ${unit}`}>
+					{Array.from({ length: 50 }, (_, i) => (
+						<span key={i} data-on={i >= 50 - overCells ? "over" : i < cells ? (near ? "near" : "fill") : undefined} />
+					))}
+				</div>
+			)}
+			<span className={cx("mono text-sm", over ? "text-error" : near ? "text-success" : "text-ink-2")}>
+				{count.toLocaleString()}
+				{limit ? ` / ${limit.value.toLocaleString()}` : ""} {unit}
+			</span>
+			<span className="text-sm text-muted">{other}</span>
+		</div>
 	);
 }
 
@@ -668,9 +681,9 @@ function DraftPanel({
 			<Section title="Draft" actions={<Button size="sm" variant="ghost" onClick={onStop}>Stop</Button>}>
 				<p className="mb-2 text-xs text-muted">
 					{status ?? RUN_LABEL[busy ?? "draft"]} <Elapsed />
-					{!stream && " · the model may think for a while before any text appears"}
+					{!stream && ". The model may think for a while before any text appears."}
 				</p>
-				<div className="rounded-md border border-border bg-surface px-5 py-4">
+				<div className="panel px-5 py-4">
 					<p className="essay-text caret">{stream.replace(/^\s+/, "")}</p>
 				</div>
 				<LengthMeter text={stream} essay={essay} />
@@ -703,10 +716,10 @@ function DraftPanel({
 		<Section
 			title="Draft"
 			actions={
-				<select value={selected.id} onChange={(e) => onSelectVersion(e.target.value)} className="h-7 rounded-md border border-border bg-surface px-2 text-xs" aria-label="Version">
+				<select value={selected.id} onChange={(e) => onSelectVersion(e.target.value)} className="field w-auto text-sm" aria-label="Version">
 					{[...versions].reverse().map((v, i) => (
 						<option key={v.id} value={v.id}>
-							v{versions.length - i} · {KIND_LABEL[v.kind]} · {formatDateTime(v.createdAt)}
+							v{versions.length - i}, {KIND_LABEL[v.kind]}, {formatDateTime(v.createdAt)}
 						</option>
 					))}
 				</select>
@@ -715,7 +728,7 @@ function DraftPanel({
 			<div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
 				<LengthMeter text={selected.text} essay={essay} />
 				{selected.angle && <span className="text-xs text-muted">Angle: {selected.angle}</span>}
-				{!isLatest && <Badge tone="warn">Older version — the chat revises the latest</Badge>}
+				{!isLatest && <Badge tone="warn">Older version: the chat revises the latest</Badge>}
 			</div>
 			{selected.instruction && <p className="mb-2 line-clamp-2 text-xs text-muted" title={selected.instruction}>Change: {selected.instruction}</p>}
 
@@ -746,7 +759,7 @@ function DraftPanel({
 				</div>
 			) : (
 				<>
-					<div className="rounded-md border border-border bg-surface px-5 py-4">
+					<div className="panel px-5 py-4">
 						<p className="essay-text">{marked ?? selected.text}</p>
 					</div>
 					<div className="mt-2 flex flex-wrap gap-2">
@@ -787,7 +800,7 @@ const PROBLEM_LABEL = { unsupported: "Not in your material", embellished: "Goes 
 
 function AuditView({ audit }: { audit: Audit }) {
 	return (
-		<div className="mt-4 rounded-md border border-border bg-surface px-3 py-3">
+		<div className="mt-4 panel px-3 py-3">
 			<div className="mb-2 flex items-center gap-2">
 				<h3 className="text-sm font-semibold">Fact check</h3>
 				{audit.issues.length === 0 ? <Badge tone="ok">No problems found</Badge> : <Badge tone="warn">{audit.issues.length} to review</Badge>}
@@ -797,11 +810,11 @@ function AuditView({ audit }: { audit: Audit }) {
 				<ul className="mt-3 grid gap-3">
 					{audit.issues.map((issue, i) => (
 						<li key={i} className="border-l-2 border-warn pl-3 text-sm">
-							<p className="essay-text text-[15px]">“{issue.excerpt}”</p>
+							<p className="essay-text text-md">“{issue.excerpt}”</p>
 							<p className="mt-1">
 								<Badge tone="warn">{PROBLEM_LABEL[issue.problem]}</Badge> <span className="text-muted">{issue.explanation}</span>
 							</p>
-							{issue.suggestion && <p className="mt-1 text-[13px]">Suggestion: {issue.suggestion}</p>}
+							{issue.suggestion && <p className="mt-1 text-sm">Suggestion: {issue.suggestion}</p>}
 						</li>
 					))}
 				</ul>

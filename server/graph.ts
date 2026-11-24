@@ -49,7 +49,7 @@ export function buildGraph(experiences: Experience[], essays: Essay[], entries: 
 			kind: "experience",
 			label: exp.title,
 			category: exp.category,
-			detail: [CATEGORY_LABELS[exp.category], exp.timeframe, exp.summary].filter(Boolean).join(" · "),
+			detail: [[CATEGORY_LABELS[exp.category], exp.timeframe].filter(Boolean).join(", "), exp.summary].filter(Boolean).join("\n"),
 			href: `/bank#${exp.id}`,
 		});
 	}
@@ -72,7 +72,7 @@ export function buildGraph(experiences: Experience[], essays: Essay[], entries: 
 			label: essay.title,
 			detail: [essay.scholarship, angle ? `Angle: ${angle.title}` : "Not planned yet", `${essay.versions.length} draft version${essay.versions.length === 1 ? "" : "s"}`]
 				.filter(Boolean)
-				.join(" · "),
+				.join("\n"),
 			href: `/essays/${essay.id}`,
 		});
 		for (const id of linked) edges.push({ source: essay.id, target: id, kind: "uses" });

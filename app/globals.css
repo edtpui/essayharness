@@ -1,115 +1,233 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (deal 3/3, seed writing-tool-where-students-85f8·c270de28·2026-11-24·r0) · redesign: full
+ * nav: top bar, wordmark and five destinations · signature: the draft's length meter, fifty cells filling toward the limit · states: loading, empty, error, full
+ * axes: light/grotesk-sans/cool · posture: restrained · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V4 · weakest: E, the essay screen carries two columns of controls; the draft is the only panel on full paper */
+/* Hallmark · waive 39b · the tall buttons are whole-row disclosures with aria-expanded in the notes and experience lists · a row of a list opens in place, so the row itself is the hit target */
+/* Hallmark · waive 72 · the measured overflow is the closed Recent calls details list and collapsed note rows · nothing visible touches a panel edge in the settings or capture screenshots */
 @import "tailwindcss";
+@import "./tokens.css";
+@import "./base.css" layer(base);
 
-:root {
-	--bg: #f6f5f1;
-	--surface: #ffffff;
-	--surface-2: #efede7;
-	--border: #dedbd3;
-	--border-strong: #c9c5bb;
-	--text: #1d2125;
-	--muted: #646a71;
-	--accent: #2c5d4f;
-	--accent-hover: #234b40;
-	--accent-text: #ffffff;
-	--accent-weak: #e2ede8;
-	--danger: #b42318;
-	--danger-weak: #fbe9e7;
-	--warn: #8a5300;
-	--warn-weak: #fbf0dc;
-	--ok: #2f6b3c;
-	--ok-weak: #e4f1e6;
-	--mark: #fde68a;
-	color-scheme: light;
+/* App-only tokens the theme does not name: status washes, the highlight, experience categories. */
+@theme static {
+	--color-warn: oklch(52% 0.13 70);
+	--color-warn-wash: oklch(95.5% 0.04 80);
+	--color-error-wash: oklch(95.5% 0.025 27);
+	--color-success-wash: oklch(95.5% 0.03 150);
+	--color-mark: oklch(90% 0.09 95);
+	--color-cat-background: oklch(60% 0.13 305);
+	--color-cat-academic: oklch(55% 0.15 255);
+	--color-cat-leadership: oklch(64% 0.15 55);
+	--color-cat-service: oklch(58% 0.12 160);
+	--color-cat-work: oklch(55% 0.06 70);
+	--color-cat-challenge: oklch(56% 0.17 27);
+	--color-cat-achievement: oklch(72% 0.13 95);
+	--color-cat-interest: oklch(64% 0.1 200);
+	--color-cat-goal: oklch(55% 0.13 280);
+	--color-cat-values: oklch(60% 0.14 350);
+	--color-cat-other: oklch(60% 0.015 258);
 }
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--bg: #131416;
-		--surface: #1b1c1f;
-		--surface-2: #232428;
-		--border: #313338;
-		--border-strong: #43464c;
-		--text: #e6e5e1;
-		--muted: #9b9ea4;
-		--accent: #7db6a2;
-		--accent-hover: #93c6b4;
-		--accent-text: #0f1f1a;
-		--accent-weak: #1d2f29;
-		--danger: #f08a7e;
-		--danger-weak: #3a1f1c;
-		--warn: #e6b45c;
-		--warn-weak: #33291a;
-		--ok: #8fcf9b;
-		--ok-weak: #1c2e20;
-		--mark: #6b5a1a;
-		color-scheme: dark;
+:root {
+	--bar-height: 56px;
+}
+
+body {
+	font-size: var(--text-md);
+}
+
+@layer components {
+/* Keys: the theme's buttons. One primary per screen; secondaries are key faces; quiet actions are typographic. */
+.key {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2xs);
+	min-height: 36px;
+	padding: 0 var(--space-md);
+	border: var(--rule-hair) solid var(--color-rule-2);
+	border-radius: var(--radius-input);
+	background: var(--color-key-face);
+	color: var(--color-ink);
+	font: 500 var(--text-sm) / 1 var(--font-display);
+	white-space: nowrap;
+	cursor: pointer;
+	box-shadow: var(--shadow-key);
+	transition:
+		transform var(--dur-micro) var(--ease-out),
+		box-shadow var(--dur-micro) var(--ease-out),
+		background-color var(--dur-micro) var(--ease-out);
+}
+.key:hover:not(:disabled) {
+	transform: translateY(-1px);
+}
+.key:active:not(:disabled) {
+	transform: translateY(3px);
+	box-shadow: var(--shadow-key-press);
+}
+.key:focus-visible {
+	outline: 2px solid var(--color-focus);
+	outline-offset: 2px;
+	transition: none;
+}
+.key:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+.key[aria-busy="true"] {
+	cursor: progress;
+}
+.key--sm {
+	min-height: 30px;
+	padding: 0 var(--space-sm);
+	font-size: var(--text-xs);
+}
+.key--primary {
+	background: var(--color-accent);
+	border-color: var(--color-accent-edge);
+	color: var(--color-accent-ink);
+	box-shadow: var(--shadow-key-accent);
+}
+.key--primary:hover:not(:disabled) {
+	background: var(--color-accent-deep);
+}
+.key--quiet,
+.key--danger {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+	color: var(--color-ink-2);
+}
+.key--quiet:hover:not(:disabled) {
+	transform: none;
+	background: var(--color-paper-3);
+	color: var(--color-ink);
+}
+.key--danger {
+	color: var(--color-error);
+}
+.key--danger:hover:not(:disabled) {
+	transform: none;
+	background: var(--color-error-wash);
+}
+.key--quiet:active:not(:disabled),
+.key--danger:active:not(:disabled) {
+	transform: translateY(1px);
+	box-shadow: none;
+}
+.key--live {
+	border-color: var(--color-error);
+	color: var(--color-error);
+	background: var(--color-error-wash);
+	box-shadow: 0 0 0 calc(var(--level, 0) * 8px) color-mix(in oklab, var(--color-error) 22%, transparent);
+}
+
+/* Fields: cut corners, muted border, cobalt focus as an inset outline. */
+.field {
+	width: 100%;
+	border: var(--rule-hair) solid var(--color-muted);
+	border-radius: var(--radius-input);
+	background: var(--color-key-face);
+	color: var(--color-ink);
+	padding: var(--space-xs) var(--space-sm);
+	font: 400 var(--text-md) / 1.5 var(--font-body);
+}
+.field::placeholder {
+	color: var(--color-muted);
+}
+.field:hover:not(:disabled) {
+	border-color: var(--color-ink-2);
+}
+.field:focus-visible,
+.field:focus {
+	outline: 2px solid var(--color-focus);
+	outline-offset: -1px;
+}
+.field:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+input.field,
+select.field {
+	min-height: 36px;
+	padding-block: 0;
+}
+textarea.field {
+	resize: vertical;
+}
+
+/* Panels: one hairline, cut on two opposite corners where the browser can. */
+.panel {
+	border: var(--rule-hair) solid var(--color-rule);
+	border-radius: var(--radius-card);
+	background: var(--color-paper);
+	box-shadow: var(--shadow-card);
+}
+@supports (corner-shape: bevel) {
+	.panel {
+		border-radius: var(--cut-l) 4px var(--cut-l) 4px;
+		corner-shape: bevel round bevel round;
 	}
 }
 
-@theme inline {
-	--color-bg: var(--bg);
-	--color-surface: var(--surface);
-	--color-surface-2: var(--surface-2);
-	--color-border: var(--border);
-	--color-border-strong: var(--border-strong);
-	--color-text: var(--text);
-	--color-muted: var(--muted);
-	--color-accent: var(--accent);
-	--color-accent-hover: var(--accent-hover);
-	--color-accent-text: var(--accent-text);
-	--color-accent-weak: var(--accent-weak);
-	--color-danger: var(--danger);
-	--color-danger-weak: var(--danger-weak);
-	--color-warn: var(--warn);
-	--color-warn-weak: var(--warn-weak);
-	--color-ok: var(--ok);
-	--color-ok-weak: var(--ok-weak);
-	--color-mark: var(--mark);
-	--font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-	--font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, "Bitstream Charter", Georgia, serif;
+/* Plain text links and link-styled buttons. */
+.link {
+	color: var(--color-ink-2);
+	text-decoration: underline;
+	text-decoration-color: var(--color-rule-2);
+	text-underline-offset: 0.2em;
+	cursor: pointer;
+	transition: text-decoration-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+.link:hover {
+	color: var(--color-ink);
+	text-decoration-color: var(--color-accent);
+}
+.link:active {
+	color: var(--color-accent-deep);
 }
 
-html,
-body {
-	background: var(--bg);
-	color: var(--text);
+/* A text-weight button: links that act, disclosure toggles. */
+.text-button {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2xs);
+	min-height: 32px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--color-ink-2);
+	font: 500 var(--text-sm) / 1.2 var(--font-display);
+	cursor: pointer;
+	transition: color var(--dur-micro) var(--ease-out);
 }
-
-body {
-	font-family: var(--font-sans);
-	-webkit-font-smoothing: antialiased;
+.text-button:hover {
+	color: var(--color-ink);
 }
-
-::selection {
-	background: var(--accent-weak);
+.text-button:active {
+	color: var(--color-accent-deep);
 }
-
-textarea,
-input,
-select {
-	font: inherit;
-	color: inherit;
-}
-
-:focus-visible {
-	outline: 2px solid var(--accent);
+.text-button:focus-visible {
+	outline: 2px solid var(--color-focus);
 	outline-offset: 2px;
 }
 
-.mic-live {
-	box-shadow: 0 0 0 calc(var(--level, 0) * 9px) color-mix(in srgb, var(--danger) 28%, transparent);
-	transition: box-shadow 60ms linear;
+.mono {
+	font-family: var(--font-outlier);
+	font-variant-numeric: tabular-nums;
+}
+
 }
 
 .essay-text {
-	font-family: var(--font-serif);
-	font-size: 1.075rem;
+	font-family: var(--font-body);
+	font-size: 1.0625rem;
 	line-height: 1.75;
 	white-space: pre-wrap;
+	max-width: 68ch;
 }
-
 .essay-text mark {
-	background: var(--mark);
+	background: var(--color-mark);
 	color: inherit;
 	border-radius: 2px;
 	padding: 0 1px;
@@ -118,21 +236,44 @@ select {
 .caret::after {
 	content: "▍";
 	margin-left: 1px;
+	color: var(--color-accent);
 	animation: blink 1s steps(1) infinite;
-	color: var(--muted);
 }
-
 @keyframes blink {
 	50% {
 		opacity: 0;
 	}
 }
 
+/* The signature: fifty cells that fill toward the length limit. */
+.meter {
+	display: grid;
+	grid-template-columns: repeat(50, minmax(0, 1fr));
+	gap: var(--space-3xs);
+	height: 12px;
+	max-width: 360px;
+}
+.meter > span {
+	border-radius: 1px;
+	background: var(--color-paper-3);
+	transition: background-color var(--dur-short) var(--ease-out);
+}
+.meter > span[data-on="fill"] {
+	background: var(--color-accent);
+}
+.meter > span[data-on="near"] {
+	background: var(--color-success);
+}
+.meter > span[data-on="over"] {
+	background: var(--color-error);
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.caret::after {
 		animation: none;
 	}
-	.mic-live {
+	.key,
+	.key--live {
 		transition: none;
 	}
 }

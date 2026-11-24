@@ -136,7 +136,7 @@ export function CapturePage() {
 				},
 			});
 			setDraft(EMPTY_DRAFT);
-			setSavedNote("Saved. Sorting it into your experience bank in the background — you can keep going.");
+			setSavedNote("Saved. Sorting it into your experience bank in the background. You can keep going.");
 			setEntries((list) => [entry, ...(list ?? [])]);
 			sort(entry.id);
 		} catch (err) {
@@ -159,9 +159,9 @@ export function CapturePage() {
 				description="Talk through anything: a story, a job, a setback, a person, a goal. Notes are saved on this computer and sorted into your experience bank, which every essay draws from."
 			/>
 
-			<div ref={boxRef} className="mb-8 scroll-mt-6 rounded-lg border border-border bg-surface p-4">
+			<div ref={boxRef} className="mb-8 scroll-mt-6 panel p-4">
 				{draft.prompt && (
-					<div className="mb-3 flex items-start justify-between gap-3 rounded-md bg-accent-weak px-3 py-2 text-sm text-accent">
+					<div className="mb-3 flex items-start justify-between gap-3 rounded-md bg-accent-wash px-3 py-2 text-sm text-accent">
 						<p>
 							<span className="font-medium">Answering: </span>
 							{draft.prompt}
@@ -200,12 +200,13 @@ export function CapturePage() {
 			<div className="grid gap-x-8 lg:grid-cols-2">
 				<InterviewSection interview={interview} onAnswer={choosePrompt} onChange={setInterview} />
 				<Section title="Starting points" description="Pick one to answer, or just talk.">
-					<ul className="divide-y divide-border rounded-md border border-border bg-surface">
+					<ul className="divide-y divide-rule panel">
 						{STARTERS.map((s) => (
-							<li key={s}>
-								<button type="button" className="w-full px-3 py-2 text-left text-sm hover:bg-surface-2" onClick={() => choosePrompt(s)}>
-									{s}
-								</button>
+							<li key={s} className="flex items-center gap-3 px-3 py-2">
+								<p className="min-w-0 flex-1 text-sm">{s}</p>
+								<Button size="sm" variant="ghost" onClick={() => choosePrompt(s)} aria-label={`Answer: ${s}`}>
+									Answer
+								</Button>
 							</li>
 						))}
 					</ul>
@@ -220,7 +221,7 @@ export function CapturePage() {
 				) : entries.length === 0 ? (
 					<EmptyState>No notes yet. Dictate your first story above.</EmptyState>
 				) : (
-					<ul className="divide-y divide-border rounded-md border border-border bg-surface">
+					<ul className="divide-y divide-rule panel">
 						{entries.map((entry) => (
 							<EntryRow key={entry.id} entry={entry} titles={titles} queued={sorting.has(entry.id)} onSort={() => sort(entry.id)} onChanged={load} />
 						))}
@@ -278,7 +279,7 @@ function InterviewSection({
 			{open.length === 0 ? (
 				<EmptyState>{busy ? "Reading your bank…" : "No open questions. Ask for some when you're ready."}</EmptyState>
 			) : (
-				<ul className="divide-y divide-border rounded-md border border-border bg-surface">
+				<ul className="divide-y divide-rule panel">
 					{open.map((q) => (
 						<li key={q.id} className="px-3 py-2.5">
 							<div className="mb-1 flex items-center gap-2">{q.theme && <Badge tone="accent">{q.theme}</Badge>}</div>
@@ -357,7 +358,7 @@ function ImportSection({ onImported }: { onImported: () => Promise<void> }) {
 					setDragging(false);
 					setFiles((current) => [...current, ...Array.from(e.dataTransfer.files)]);
 				}}
-				className={cx("rounded-md border border-dashed px-4 py-4", dragging ? "border-accent bg-accent-weak/40" : "border-border-strong bg-surface")}
+				className={cx("rounded-md border border-dashed px-4 py-4", dragging ? "border-accent bg-accent-wash" : "border-rule-2 bg-paper")}
 			>
 				<div className="flex flex-wrap items-center gap-3">
 					<Button onClick={() => inputRef.current?.click()}>Choose files</Button>
@@ -387,7 +388,7 @@ function ImportSection({ onImported }: { onImported: () => Promise<void> }) {
 				<div className="mt-3 flex flex-wrap items-center gap-3">
 					<label className="flex items-center gap-2 text-sm">
 						<input type="checkbox" checked={sample} onChange={(e) => setSample(e.target.checked)} />
-						My own writing — use it to match my voice
+						My own writing: use it to match my voice
 					</label>
 					<Button variant="primary" onClick={upload} busy={busy} disabled={!files.length} className="ml-auto">
 						Upload {files.length > 1 ? `${files.length} files` : ""}
@@ -566,7 +567,7 @@ function ReviewView({ entry, onRetry }: { entry: Entry; onRetry: () => void }) {
 			</div>
 		);
 	return (
-		<div className="mt-3 grid gap-3 rounded-md border border-border bg-surface-2 px-3 py-3 text-sm">
+		<div className="mt-4 grid gap-3 border-l-2 border-accent pl-4 text-sm">
 			<div className="flex flex-wrap items-center gap-2">
 				<h3 className="font-semibold">Review</h3>
 				<Badge>{review.kind}</Badge>
@@ -582,7 +583,7 @@ function ReviewView({ entry, onRetry }: { entry: Entry; onRetry: () => void }) {
 			{list("How to strengthen it", review.suggestions)}
 			{review.goodFor.length > 0 && (
 				<p className="text-xs text-muted">
-					Could answer prompts about: <span className="text-text">{review.goodFor.join(" · ")}</span>
+					Could answer prompts about: <span className="text-ink">{review.goodFor.join("; ")}</span>
 				</p>
 			)}
 		</div>

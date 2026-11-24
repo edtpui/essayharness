@@ -23,11 +23,26 @@ export function SettingsPage() {
 			<KeySettings view={view} onChanged={refresh} />
 			<UsageSection />
 			<Section title="Your data" description="Everything is plain JSON in one folder. Back it up like any important document.">
-				<div className="rounded-md border border-border bg-surface px-3 py-3 text-sm">
-					<p className="font-mono text-[13px] break-all">{view.dataDir}</p>
-					<p className="mt-2 text-muted">
-						<code>entries/</code> your notes and answers · <code>experiences/</code> the bank · <code>essays/</code> briefs, plans and every draft ·{" "}
-						<code>profile.json</code> · <code>settings.json</code> · <code>credentials.json</code> (API keys) · <code>usage.jsonl</code>. Set <code>SE_DATA_DIR</code> to move it.
+				<div className="panel px-3 py-3 text-sm">
+					<p className="mono text-sm break-all text-ink">{view.dataDir}</p>
+					<dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-ink-2">
+						{[
+							["entries/", "your notes and answers"],
+							["experiences/", "the bank"],
+							["essays/", "briefs, plans, chats and every draft"],
+							["profile.json", "about you"],
+							["settings.json", "models and options"],
+							["credentials.json", "API keys"],
+							["usage.jsonl", "one line per model call"],
+						].map(([name, what]) => (
+							<div key={name} className="contents">
+								<dt className="mono text-sm text-ink">{name}</dt>
+								<dd className="m-0">{what}</dd>
+							</div>
+						))}
+					</dl>
+					<p className="mt-3 text-muted">
+						Set <code className="mono">SE_DATA_DIR</code> to move it.
 					</p>
 					<p className="mt-2 text-muted">
 						Stored locally, but not processed offline: notes and drafts are sent to the model provider you choose, and dictation audio goes to Deepgram.
@@ -86,8 +101,8 @@ function ModelPicker({ label, value, onChange, customName }: { label: string; va
 			<Button onClick={load} busy={loading}>
 				List models
 			</Button>
-			{error && <p className="text-xs text-danger sm:col-span-3">{error}</p>}
-			{models.length > 0 && <p className="text-xs text-muted sm:col-span-3">{models.length} models available — pick one from the model field&apos;s suggestions.</p>}
+			{error && <p className="text-xs text-error sm:col-span-3">{error}</p>}
+			{models.length > 0 && <p className="text-xs text-muted sm:col-span-3">{models.length} models available. Pick one from the model field&apos;s suggestions.</p>}
 		</div>
 	);
 }
@@ -123,7 +138,7 @@ function ModelSettings({ view, onSaved }: { view: SettingsView; onSaved: (view: 
 
 	return (
 		<Section title="Models" description="The writing model plans, asks questions, drafts and fact-checks. Claude Opus 5.5 is the default.">
-			<div className="grid gap-4 rounded-md border border-border bg-surface p-4">
+			<div className="grid gap-4 panel p-4">
 				<ModelPicker label="Writing model" value={form.mainModel} onChange={(ref) => set("mainModel", ref)} customName={form.customName} />
 				<label className="flex items-center gap-2 text-sm">
 					<input type="checkbox" checked={separate} onChange={(e) => (setSaved(false), setSeparate(e.target.checked))} />
@@ -137,8 +152,8 @@ function ModelSettings({ view, onSaved }: { view: SettingsView; onSaved: (view: 
 						customName={form.customName}
 					/>
 				)}
-				<div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
-					<Field label="OpenAI-compatible endpoint" hint="Ollama: http://localhost:11434/v1 · LM Studio: http://localhost:1234/v1 · OpenRouter: https://openrouter.ai/api/v1">
+				<div className="grid gap-3 border-t border-rule pt-4 sm:grid-cols-2">
+					<Field label="OpenAI-compatible endpoint" hint="For example Ollama at http://localhost:11434/v1, LM Studio at http://localhost:1234/v1, OpenRouter at https://openrouter.ai/api/v1">
 						<TextInput value={form.customBaseUrl} onChange={(e) => set("customBaseUrl", e.target.value)} placeholder="http://localhost:11434/v1" />
 					</Field>
 					<Field label="Endpoint name" hint="How it's labelled in this app">
@@ -164,7 +179,7 @@ function ModelSettings({ view, onSaved }: { view: SettingsView; onSaved: (view: 
 					<Button variant="primary" onClick={save} busy={busy}>
 						Save settings
 					</Button>
-					{saved && <span className="text-xs text-ok">Saved</span>}
+					{saved && <span className="text-xs text-success">Saved</span>}
 				</div>
 			</div>
 		</Section>
@@ -175,13 +190,13 @@ const KEY_ROWS: { name: CredentialName; label: string; help: string }[] = [
 	{ name: "anthropic", label: "Anthropic", help: "console.anthropic.com → API keys" },
 	{ name: "openai", label: "OpenAI", help: "platform.openai.com → API keys" },
 	{ name: "custom", label: "Custom endpoint", help: "Only if your endpoint needs one (OpenRouter does; Ollama doesn't)" },
-	{ name: "deepgram", label: "Deepgram (dictation)", help: "console.deepgram.com — the key needs Member permission or higher" },
+	{ name: "deepgram", label: "Deepgram (dictation)", help: "console.deepgram.com. The key needs Member permission or higher." },
 ];
 
 function KeySettings({ view, onChanged }: { view: SettingsView; onChanged: () => Promise<void> }) {
 	return (
 		<Section title="API keys" description="Saved in credentials.json in your data folder. A key set as an environment variable is used when none is saved here.">
-			<ul className="divide-y divide-border rounded-md border border-border bg-surface">
+			<ul className="divide-y divide-rule panel">
 				{KEY_ROWS.map((row) => (
 					<KeyRow key={row.name} row={row} status={view.credentials[row.name]} onChanged={onChanged} />
 				))}
@@ -247,7 +262,7 @@ function KeyRow({ row, status, onChanged }: { row: (typeof KEY_ROWS)[number]; st
 					</Button>
 				)}
 			</div>
-			{result && <p className={`text-xs sm:col-span-3 ${result.ok ? "text-ok" : "text-danger"}`}>{result.text}</p>}
+			{result && <p className={`text-xs sm:col-span-3 ${result.ok ? "text-success" : "text-error"}`}>{result.text}</p>}
 		</li>
 	);
 }
@@ -260,6 +275,8 @@ const TASK_LABEL: Record<string, string> = {
 	revise: "Revisions",
 	tighten: "Cutting to limit",
 	audit: "Fact checks",
+	chat: "Chat replies",
+	review: "Document reviews",
 	test: "Tests",
 };
 
@@ -276,7 +293,7 @@ function UsageSection() {
 		<Section title="Usage" description="Estimated from Anthropic list prices. Calls to other providers are counted in tokens only.">
 			{error && <Notice>{error}</Notice>}
 			{usage && (
-				<div className="rounded-md border border-border bg-surface p-4 text-sm">
+				<div className="panel p-4 text-sm">
 					<div className="flex flex-wrap gap-x-8 gap-y-2">
 						<div>
 							<p className="text-xs text-muted">Estimated spend</p>
@@ -294,7 +311,7 @@ function UsageSection() {
 						</div>
 					</div>
 					{Object.keys(usage.byTask).length > 0 && (
-						<table className="mt-4 w-full text-left text-[13px]">
+						<table className="mt-4 w-full text-left text-sm">
 							<thead className="text-xs text-muted">
 								<tr>
 									<th className="py-1 font-medium">Task</th>
@@ -306,7 +323,7 @@ function UsageSection() {
 							</thead>
 							<tbody className="tabular-nums">
 								{Object.entries(usage.byTask).map(([task, t]) => (
-									<tr key={task} className="border-t border-border">
+									<tr key={task} className="border-t border-rule">
 										<td className="py-1.5">{TASK_LABEL[task] ?? task}</td>
 										<td className="py-1.5 text-right">{t.calls}</td>
 										<td className="py-1.5 text-right">{t.inputTokens.toLocaleString()}</td>
@@ -323,8 +340,8 @@ function UsageSection() {
 							<ul className="mt-2 grid gap-1 text-xs text-muted tabular-nums">
 								{usage.recent.map((r, i) => (
 									<li key={`${r.at}-${i}`}>
-										{formatDateTime(r.at)} · {TASK_LABEL[r.task] ?? r.task} · {r.model} · {r.inputTokens + r.cacheReadTokens + r.cacheWriteTokens} in / {r.outputTokens} out
-										{r.costUsd !== null && ` · ${formatUsd(r.costUsd)}`}
+										{formatDateTime(r.at)}, {TASK_LABEL[r.task] ?? r.task}, {r.model}, {r.inputTokens + r.cacheReadTokens + r.cacheWriteTokens} in / {r.outputTokens} out
+										{r.costUsd !== null && `, ${formatUsd(r.costUsd)}`}
 									</li>
 								))}
 							</ul>

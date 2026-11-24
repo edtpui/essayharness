@@ -8,19 +8,7 @@ import { CATEGORIES, CATEGORY_LABELS, GRAPH_NODE_KINDS, type Category, type Grap
 import { normalizeForMatch } from "@/lib/text";
 import { Badge, Button, EmptyState, Notice, PageHeader, TextInput, cx } from "../ui";
 
-const CATEGORY_COLORS: Record<Category, string> = {
-	background: "#b07cd8",
-	academic: "#4f8fd8",
-	leadership: "#e08a3c",
-	service: "#3fa57a",
-	work: "#a8865a",
-	challenge: "#d9534f",
-	achievement: "#e2c044",
-	interest: "#45b3bf",
-	goal: "#6f7fe0",
-	values: "#d46fa6",
-	other: "#8a8f98",
-};
+const CATEGORY_COLORS = Object.fromEntries(CATEGORIES.map((c) => [c, `var(--color-cat-${c})`])) as Record<Category, string>;
 
 const KIND_LABEL: Record<GraphNodeKind, string> = {
 	experience: "Experiences",
@@ -181,14 +169,14 @@ export function GraphPage() {
 					<div className="min-w-0">
 						<div className="mb-2 flex flex-wrap items-center gap-2">
 							{GRAPH_NODE_KINDS.map((kind) => (
-								<label key={kind} className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2 py-1 text-xs">
+								<label key={kind} className="flex items-center gap-1.5 panel px-2 py-1 text-xs">
 									<input type="checkbox" checked={shown[kind]} onChange={(e) => setShown((s) => ({ ...s, [kind]: e.target.checked }))} />
 									{KIND_LABEL[kind]} <span className="text-muted tabular-nums">{counts[kind] ?? 0}</span>
 								</label>
 							))}
 							<TextInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find…" className="h-8 max-w-48" aria-label="Find in graph" />
 						</div>
-						<div className="relative h-[calc(100vh-15rem)] min-h-[420px] overflow-hidden rounded-lg border border-border bg-surface">
+						<div className="relative h-[calc(100vh-15rem)] min-h-[420px] overflow-hidden panel">
 							{!graph && <p className="p-4 text-sm text-muted">Loading…</p>}
 							<svg
 								ref={svgRef}
@@ -308,7 +296,7 @@ export function GraphPage() {
 function NodeDetails({ node, neighbors, onSelect }: { node: GraphNode; neighbors: GraphNode[]; onSelect: (id: string) => void }) {
 	const kindLabel: Record<GraphNodeKind, string> = { experience: "Experience", skill: "Quality", person: "Person", essay: "Essay", document: "Document" };
 	return (
-		<div className="rounded-md border border-border bg-surface px-3 py-3">
+		<div className="panel px-3 py-3">
 			<div className="mb-1 flex items-center gap-2">
 				<Badge tone={node.kind === "essay" ? "accent" : "neutral"}>{kindLabel[node.kind]}</Badge>
 				{node.category && <span className="inline-block size-2.5 rounded-full" style={{ background: CATEGORY_COLORS[node.category] }} />}
@@ -326,7 +314,7 @@ function NodeDetails({ node, neighbors, onSelect }: { node: GraphNode; neighbors
 					<ul className="grid max-h-64 min-w-0 grid-cols-1 gap-0.5 overflow-y-auto">
 						{neighbors.map((n) => (
 							<li key={n.id}>
-								<button type="button" className={cx("block w-full min-w-0 truncate rounded px-1.5 py-0.5 text-left text-xs hover:bg-surface-2")} onClick={() => onSelect(n.id)} title={n.label}>
+								<button type="button" className={cx("block w-full min-w-0 truncate rounded px-1.5 py-0.5 text-left text-xs hover:bg-paper-2")} onClick={() => onSelect(n.id)} title={n.label}>
 									{n.label}
 								</button>
 							</li>

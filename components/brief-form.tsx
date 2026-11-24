@@ -47,7 +47,7 @@ export function BriefForm({
 	return (
 		<form onSubmit={submit} className="grid gap-3">
 			<div className="grid gap-3 sm:grid-cols-2">
-				<Field label="Essay title" htmlFor="brief-title" hint="For you, e.g. 'Loran — personal statement'">
+				<Field label="Essay title" htmlFor="brief-title" hint="For you, for example: Loran personal statement">
 					<TextInput id="brief-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
 				</Field>
 				<Field label="Scholarship or program" htmlFor="brief-scholarship">
@@ -68,7 +68,7 @@ export function BriefForm({
 					</Select>
 				</Field>
 			</div>
-			<Field label="Selection criteria and values" htmlFor="brief-criteria" hint="What the committee looks for — from the scholarship's website, if they publish it.">
+			<Field label="Selection criteria and values" htmlFor="brief-criteria" hint="What the committee looks for, from the scholarship's website if they publish it.">
 				<TextArea id="brief-criteria" rows={3} value={criteria} onChange={(e) => setCriteria(e.target.value)} />
 			</Field>
 			<Field label="Your notes" hint="Anything to emphasize or avoid, the tone you want, a story you already know you want to use.">

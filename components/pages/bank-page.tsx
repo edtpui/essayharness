@@ -56,7 +56,7 @@ export function BankPage() {
 		<>
 			<PageHeader
 				title="Experience bank"
-				description="Everything the essay agent knows about you, sorted from your notes. Edit anything that's wrong — essays only use what's here and in your answers."
+				description="Everything the essay agent knows about you, sorted from your notes. Edit anything that's wrong: essays only use what's here and in your answers."
 				actions={
 					<Button variant="primary" onClick={() => setCreating(true)} disabled={creating}>
 						Add experience
@@ -68,8 +68,8 @@ export function BankPage() {
 			{error && <Notice className="mb-4">{error}</Notice>}
 
 			{creating && (
-				<div className="mb-6 rounded-lg border border-border bg-surface p-4">
-					<h2 className="mb-3 text-[15px] font-semibold">New experience</h2>
+				<div className="mb-6 panel p-4">
+					<h2 className="mb-3 text-md font-semibold">New experience</h2>
 					<ExperienceEditor
 						onSaved={async () => {
 							setCreating(false);
@@ -97,7 +97,7 @@ export function BankPage() {
 				) : visible.length === 0 ? (
 					<EmptyState>Nothing matches.</EmptyState>
 				) : (
-					<ul className="divide-y divide-border rounded-md border border-border bg-surface">
+					<ul className="divide-y divide-rule panel">
 						{visible.map((exp) => (
 							<ExperienceRow key={exp.id} experience={exp} open={openId === exp.id} onToggle={() => setOpenId((id) => (id === exp.id ? null : exp.id))} onChanged={load} />
 						))}
@@ -114,8 +114,8 @@ function CategoryChip({ active, onClick, label, count }: { active: boolean; onCl
 			type="button"
 			onClick={onClick}
 			className={cx(
-				"rounded-md border px-2 py-1 text-xs",
-				active ? "border-accent bg-accent-weak text-accent" : "border-border bg-surface text-muted hover:text-text",
+				"inline-flex min-h-8 items-center rounded-(--radius-input) border px-2.5 text-sm",
+				active ? "border-accent bg-accent-wash text-accent" : "border-rule bg-paper text-muted hover:text-ink",
 				count === 0 && !active && "opacity-60",
 			)}
 		>
@@ -127,7 +127,7 @@ function CategoryChip({ active, onClick, label, count }: { active: boolean; onCl
 function ExperienceRow({ experience, open, onToggle, onChanged }: { experience: Experience; open: boolean; onToggle: () => void; onChanged: () => Promise<void> }) {
 	return (
 		<li id={experience.id} className="scroll-mt-6">
-			<button type="button" onClick={onToggle} className="flex w-full items-start gap-2 px-3 py-2.5 text-left hover:bg-surface-2" aria-expanded={open}>
+			<button type="button" onClick={onToggle} className="flex w-full items-start gap-2 px-3 py-2.5 text-left hover:bg-paper-2" aria-expanded={open}>
 				<ChevronIcon open={open} className="mt-0.5 shrink-0 text-muted" />
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
@@ -140,7 +140,7 @@ function ExperienceRow({ experience, open, onToggle, onChanged }: { experience: 
 				<span className="shrink-0 text-xs text-muted">{formatDate(experience.updatedAt)}</span>
 			</button>
 			{open && (
-				<div className="border-t border-border px-3 py-3 pl-9">
+				<div className="border-t border-rule px-3 py-3 pl-9">
 					<ExperienceEditor experience={experience} onSaved={onChanged} />
 					<Sources experienceId={experience.id} count={experience.sourceEntryIds.length} />
 				</div>
@@ -271,7 +271,7 @@ function ExperienceEditor({ experience, onSaved, onCancel }: { experience?: Expe
 						Cancel
 					</Button>
 				)}
-				{saved && <span className="text-xs text-ok">Saved</span>}
+				{saved && <span className="text-xs text-success">Saved</span>}
 				{experience && (
 					<Button variant="danger" onClick={remove} disabled={busy} className="ml-auto">
 						Delete
@@ -296,19 +296,19 @@ function Sources({ experienceId, count }: { experienceId: string; count: number 
 
 	if (count === 0) return <p className="mt-3 text-xs text-muted">Added by hand.</p>;
 	return (
-		<div className="mt-4 border-t border-border pt-3">
-			<button type="button" className="flex items-center gap-1 text-xs text-muted hover:text-text" onClick={() => setOpen((o) => !o)}>
+		<div className="mt-4 border-t border-rule pt-3">
+			<button type="button" className="text-button" onClick={() => setOpen((o) => !o)}>
 				<ChevronIcon open={open} width={12} height={12} />
 				Built from {count} note{count === 1 ? "" : "s"}
 			</button>
-			{error && <p className="mt-2 text-xs text-danger">{error}</p>}
+			{error && <p className="mt-2 text-xs text-error">{error}</p>}
 			{open && sources && (
 				<ul className="mt-2 grid gap-2">
 					{sources.map((s) => (
-						<li key={s.id} className="rounded-md bg-surface-2 px-3 py-2 text-sm">
+						<li key={s.id} className="rounded-md bg-paper-2 px-3 py-2 text-sm">
 							<p className="mb-1 text-xs text-muted">
 								{formatDateTime(s.createdAt)}
-								{s.prompt && ` · Q: ${s.prompt}`}
+								{s.prompt && `. Q: ${s.prompt}`}
 							</p>
 							<p className="whitespace-pre-wrap">{s.text}</p>
 						</li>
@@ -330,7 +330,7 @@ function ProfileSection() {
 		api<{ profile: Profile }>("/api/profile")
 			.then((r) => {
 				setProfile(r.profile);
-				setOpen(!r.profile.updatedAt);
+				setOpen(false);
 			})
 			.catch((err) => setError(messageOf(err)));
 	}, []);
@@ -359,16 +359,16 @@ function ProfileSection() {
 	const filled = [profile.name, profile.education, profile.field, profile.goals].filter((v) => v.trim()).length;
 
 	return (
-		<div className="mb-8 rounded-lg border border-border bg-surface">
+		<div className="mb-8 panel">
 			<button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-2 px-4 py-3 text-left" aria-expanded={open}>
 				<ChevronIcon open={open} className="text-muted" />
-				<span className="text-[15px] font-semibold">About you</span>
+				<span className="text-md font-semibold">About you</span>
 				<span className="text-xs text-muted">
-					{filled ? `${[profile.name, profile.education, profile.field].filter(Boolean).join(" · ")}` : "Basic facts every essay can use"}
+					{filled ? `${[profile.name, profile.education, profile.field].filter(Boolean).join(", ")}` : "Basic facts every essay can use"}
 				</span>
 			</button>
 			{open && (
-				<div className="grid gap-3 border-t border-border px-4 py-4">
+				<div className="grid gap-3 border-t border-rule px-4 py-4">
 					<div className="grid gap-3 sm:grid-cols-2">
 						<Field label="Name">
 							<TextInput value={profile.name} onChange={(e) => set("name", e.target.value)} />
@@ -394,7 +394,7 @@ function ProfileSection() {
 						<Button variant="primary" onClick={save} busy={busy}>
 							Save
 						</Button>
-						{saved && <span className="text-xs text-ok">Saved</span>}
+						{saved && <span className="text-xs text-success">Saved</span>}
 					</div>
 				</div>
 			)}
