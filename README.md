@@ -22,7 +22,7 @@ Your own API keys, dictation streamed straight from your browser, plain-file loc
 
 | Platform | Get it |
 | --- | --- |
-| Windows | [EssayHarness Setup 0.2.0.exe](https://github.com/edtpui/essayharness/releases/download/v0.2.0/EssayHarness%20Setup%200.2.0.exe) |
+| Windows | [EssayHarness.Setup.0.2.0.exe](https://github.com/edtpui/essayharness/releases/download/v0.2.0/EssayHarness.Setup.0.2.0.exe) |
 | macOS (Apple Silicon) | [EssayHarness-0.2.0-arm64.dmg](https://github.com/edtpui/essayharness/releases/download/v0.2.0/EssayHarness-0.2.0-arm64.dmg) |
 | macOS (Intel) | [EssayHarness-0.2.0.dmg](https://github.com/edtpui/essayharness/releases/download/v0.2.0/EssayHarness-0.2.0.dmg) |
 | Docker | `docker pull ghcr.io/edtpui/essayharness:0.2.0` |
