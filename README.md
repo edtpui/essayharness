@@ -22,12 +22,30 @@ Your own API keys, dictation streamed straight from your browser, plain-file loc
 
 | Platform | Get it |
 | --- | --- |
-| Windows | [EssayHarness Setup 0.1.0.exe](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness%20Setup%200.2.0.exe) |
-| macOS (Apple Silicon) | [EssayHarness-0.2.0-arm64.dmg](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness-0.2.0-arm64.dmg) |
-| macOS (Intel) | [EssayHarness-0.2.0.dmg](https://github.com/edtpui/essayharness/releases/download/v0.1.0/EssayHarness-0.2.0.dmg) |
+| Windows | [EssayHarness Setup 0.2.0.exe](https://github.com/edtpui/essayharness/releases/download/v0.2.0/EssayHarness%20Setup%200.2.0.exe) |
+| macOS (Apple Silicon) | [EssayHarness-0.2.0-arm64.dmg](https://github.com/edtpui/essayharness/releases/download/v0.2.0/EssayHarness-0.2.0-arm64.dmg) |
+| macOS (Intel) | [EssayHarness-0.2.0.dmg](https://github.com/edtpui/essayharness/releases/download/v0.2.0/EssayHarness-0.2.0.dmg) |
 | Docker | `docker pull ghcr.io/edtpui/essayharness:0.2.0` |
 
-Builds are currently unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch (on macOS, right-click the app and choose Open). See the [v0.2.0 release](https://github.com/edtpui/essayharness/releases/tag/v0.2.0) for details.
+Builds are currently unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch. On Windows, click **More info**, then **Run anyway**. On macOS, follow the steps below. See the [v0.2.0 release](https://github.com/edtpui/essayharness/releases/tag/v0.2.0) for details.
+
+### First launch on macOS
+
+EssayHarness is not signed with an Apple Developer certificate yet, so Gatekeeper blocks the first launch. That is expected; the app is safe to open if you downloaded it from the releases page above.
+
+1. Open the `.dmg` and drag **EssayHarness** into your **Applications** folder. Launch it from Applications, not from inside the DMG.
+2. macOS shows a warning that Apple could not verify the app, or that it is from an unidentified developer. Click **Done**. Do not click Move to Trash.
+3. Open **System Settings**, then **Privacy & Security**, and scroll down to the Security section. There is a note that EssayHarness was blocked, with an **Open Anyway** button.
+4. Click **Open Anyway**, confirm with Touch ID or your password, then click **Open Anyway** again in the dialog that follows.
+5. EssayHarness launches. Later launches open normally, with no warning.
+
+If the **Open Anyway** button does not appear, or macOS says the app is "damaged and can't be opened" (that message usually just means the download is quarantined, not that the file is broken), remove the quarantine flag in Terminal instead:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/EssayHarness.app
+```
+
+Then launch the app normally. A fresh download of a new version is quarantined again, so repeat one of these two routes for each new release until the builds are signed and notarized.
 
 ## Why EssayHarness
 
