@@ -1,19 +1,23 @@
 // EssayHarness desktop shell.
 //
-// Starts the standalone Next.js server (server.js) on 127.0.0.1:3400 using
-// Electron's bundled Node runtime, waits for it to answer, then shows it in
-// a window. App data stays where the server expects it (default
+// Starts the standalone Next.js server (server.js) on 127.0.0.1:3400 in an
+// Electron utility process, waits for it to answer, then shows it in a
+// window. App data stays where the server expects it (default
 // ~/.essayharness, override SE_DATA_DIR); nothing is written next to
 // the app itself.
 //
-// The packaged server's dependencies ship as resources/server/server_deps,
-// not node_modules: electron-builder strips a top-level "node_modules"
-// folder out of extraResources (see scripts/stage-standalone.mjs). The
-// spawn below therefore sets NODE_PATH to that folder so the server's
-// require() calls resolve.
+// A utility process, not a spawned copy of the app binary: the spawn made
+// macOS put a second, generic "exec" icon in the Dock, bouncing, for as
+// long as the server ran. Utility processes run the same Node server as
+// part of this app and never appear in the Dock.
+//
+// The packaged server's dependencies ship as resources/node_modules, one
+// level up from the server itself: electron-builder strips a top-level
+// "node_modules" folder out of a resource copy (see
+// scripts/stage-standalone.mjs), and Node's lookup walks up from
+// server.js and finds them there with no environment help.
 
-import { app, BrowserWindow, dialog } from "electron";
-import { spawn } from "node:child_process";
+import { app, BrowserWindow, dialog, utilityProcess } from "electron";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,21 +44,15 @@ function startServer() {
 	const entry = serverEntry();
 	const env = {
 		...process.env,
-		ELECTRON_RUN_AS_NODE: "1",
 		NODE_ENV: "production",
 		HOSTNAME: HOST,
 		PORT: String(PORT),
 	};
-	if (app.isPackaged) {
-		// The dependencies live in server_deps, not node_modules (see the
-		// header comment); NODE_PATH is where require() looks for them.
-		const deps = path.join(process.resourcesPath, "server", "server_deps");
-		env.NODE_PATH = env.NODE_PATH ? deps + path.delimiter + env.NODE_PATH : deps;
-	}
-	serverProcess = spawn(process.execPath, [entry], {
+	serverProcess = utilityProcess.fork(entry, [], {
 		cwd: path.dirname(entry),
 		env,
 		stdio: "inherit",
+		serviceName: "EssayHarness Server",
 	});
 	serverProcess.on("exit", (code) => {
 		serverProcess = null;

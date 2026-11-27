@@ -4,8 +4,10 @@
 //   dist-app/package.json      minimal manifest (name/version from package.json)
 //   dist-app/electron/main.mjs the Electron shell
 //   dist-app/server/           standalone output plus .next/static and public/
-//   dist-app/server/server_deps  the standalone node_modules, renamed so
-//                                electron-builder does not strip it (below)
+//   dist-app/deps/             the standalone node_modules, staged apart so
+//                                electron-builder maps it to
+//                                resources/node_modules instead of stripping
+//                                it (see below) (below)
 //
 // `npm run dist` and `npm run pack` build with SE_STANDALONE=1 and then run
 // this script; calling it directly fails if the standalone build is missing.
@@ -46,12 +48,13 @@ if (existsSync(path.join(root, "public"))) {
 // collection and, because the staged manifest below declares no
 // dependencies, copies none of it. That is what broke the v0.2.0 desktop
 // builds (the bundled server died with "Cannot find module 'next'").
-// Ship the server's dependencies under a different name instead; the
-// Electron shell points NODE_PATH at the renamed folder when it spawns
-// the server (see electron/main.mjs).
+// So the server's dependencies are staged as a sibling folder instead and
+// electron-builder.yml maps them to resources/node_modules, one level up
+// from the server, where Node's module lookup finds them by walking up
+// from server.js. No NODE_PATH or other runtime help is needed.
 const stagedModules = path.join(out, "server", "node_modules");
 if (existsSync(stagedModules)) {
-	await rename(stagedModules, path.join(out, "server", "server_deps"));
+	await rename(stagedModules, path.join(out, "deps"));
 }
 
 await cp(path.join(root, "electron", "main.mjs"), path.join(out, "electron", "main.mjs"));

@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { api, messageOf } from "@/lib/api";
-import { CATEGORIES, CATEGORY_LABELS, type Category, type Entry, type Experience, type ExperienceInput, type Profile } from "@/lib/types";
+import { CATEGORIES, CATEGORY_LABELS, type BankImportResult, type Category, type Entry, type Experience, type ExperienceInput, type Profile } from "@/lib/types";
 import { formatDate, formatDateTime, normalizeForMatch } from "@/lib/text";
 import { DictationField } from "../dictation";
 import { ChevronIcon } from "../icons";
@@ -16,6 +16,10 @@ export function BankPage() {
 	const [category, setCategory] = useState<Category | "all">("all");
 	const [openId, setOpenId] = useState<string | null>(null);
 	const [creating, setCreating] = useState(false);
+	const [importing, setImporting] = useState(false);
+	const [importNote, setImportNote] = useState<string | null>(null);
+	const [bankVersion, setBankVersion] = useState(0);
+	const fileRef = useRef<HTMLInputElement>(null);
 
 	const load = useCallback(async () => {
 		try {
@@ -25,6 +29,37 @@ export function BankPage() {
 			setError(messageOf(err));
 		}
 	}, []);
+
+	const onImportFile = async (file: File) => {
+		setImporting(true);
+		setImportNote(null);
+		setError(null);
+		try {
+			let bundle: unknown;
+			try {
+				bundle = JSON.parse(await file.text());
+			} catch {
+				throw new Error("That file is not a bank export: it is not valid JSON.");
+			}
+			const { result } = await api<{ result: BankImportResult }>("/api/bank/import", { body: bundle });
+			const added = result.experiencesAdded + result.entriesAdded;
+			const skipped = result.experiencesSkipped + result.entriesSkipped;
+			setImportNote(
+				added === 0 && !result.profileImported
+					? "Nothing new in that file: everything in it is already in your bank."
+					: `Imported ${result.experiencesAdded} experience${result.experiencesAdded === 1 ? "" : "s"} and ${result.entriesAdded} note${result.entriesAdded === 1 ? "" : "s"}` +
+						(result.profileImported ? ", plus your profile" : "") +
+						(skipped ? `. ${skipped} item${skipped === 1 ? "" : "s"} already here, skipped` : "") +
+						".",
+			);
+			setBankVersion((v) => v + 1);
+			await load();
+		} catch (err) {
+			setError(messageOf(err));
+		} finally {
+			setImporting(false);
+		}
+	};
 
 	useEffect(() => {
 		void load();
@@ -58,14 +93,38 @@ export function BankPage() {
 				title="Experience bank"
 				description="Everything the essay agent knows about you, sorted from your notes. Edit anything that's wrong: essays only use what's here and in your answers."
 				actions={
-					<Button variant="primary" onClick={() => setCreating(true)} disabled={creating}>
-						Add experience
-					</Button>
+					<div className="flex flex-wrap gap-2">
+						<input
+							ref={fileRef}
+							type="file"
+							accept="application/json,.json"
+							className="hidden"
+							onChange={(e) => {
+								const file = e.target.files?.[0];
+								e.target.value = "";
+								if (file) void onImportFile(file);
+							}}
+						/>
+						<Button onClick={() => fileRef.current?.click()} busy={importing}>
+							Import bank
+						</Button>
+						<Button
+							onClick={() => {
+								window.location.href = "/api/bank/export";
+							}}
+						>
+							Export bank
+						</Button>
+						<Button variant="primary" onClick={() => setCreating(true)} disabled={creating}>
+							Add experience
+						</Button>
+					</div>
 				}
 			/>
-			<ProfileSection />
+			<ProfileSection key={bankVersion} />
 
 			{error && <Notice className="mb-4">{error}</Notice>}
+			{importNote && <p className="mb-4 text-sm text-success">{importNote}</p>}
 
 			{creating && (
 				<div className="mb-6 panel p-4">

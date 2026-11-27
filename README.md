@@ -103,6 +103,8 @@ Everything lives in one folder, `%USERPROFILE%\.essayharness` by default (set `S
 | `credentials.json` | API keys (never sent to the browser) |
 | `usage.jsonl` | one line per model call, with estimated cost for Claude models |
 
+To move your bank to another computer, or keep a backup of it: on the Experience bank page, **Export bank** downloads one JSON file holding your profile, notes, and experiences. On the other install, **Import bank** on the same page reads it back. Anything already there is skipped, so importing the same file twice changes nothing, and an import never overwrites a profile you have already filled in on that install. Essays, settings, and API keys are not in the file.
+
 Storage is local, processing is not: notes and drafts go to whichever model provider you choose, and dictation audio goes to Deepgram. With an Ollama model nothing but dictation leaves your machine.
 
 Check each scholarship's rules on AI assistance before submitting. The app is built to keep essays factual and in your voice, but you are the author of record.

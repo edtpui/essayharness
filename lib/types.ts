@@ -140,6 +140,30 @@ export const ProfileInputSchema = z.object({
 	other: z.string().max(8000),
 });
 
+/* ---------- experience bank export / import ---------- */
+
+/** A whole experience bank in one file: the profile, every note, and every
+ *  experience sorted from them. Essays, settings, and API keys are not part
+ *  of the bank and are never exported. */
+export const BankExportSchema = z.object({
+	app: z.literal("essayharness"),
+	kind: z.literal("experience-bank"),
+	version: z.literal(1),
+	exportedAt: z.string().default(""),
+	profile: ProfileSchema.nullable().default(null),
+	entries: z.array(EntrySchema).max(10_000).default([]),
+	experiences: z.array(ExperienceSchema).max(10_000).default([]),
+});
+export type BankExport = z.infer<typeof BankExportSchema>;
+
+export interface BankImportResult {
+	entriesAdded: number;
+	entriesSkipped: number;
+	experiencesAdded: number;
+	experiencesSkipped: number;
+	profileImported: boolean;
+}
+
 export const LimitSchema = z.object({
 	unit: z.enum(["words", "characters"]),
 	value: z.number().int().min(1).max(100000),

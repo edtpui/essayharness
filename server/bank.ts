@@ -1,13 +1,15 @@
 import {
 	EntrySchema,
 	ExperienceSchema,
+	type BankExport,
+	type BankImportResult,
 	type Entry,
 	type EntrySource,
 	type Experience,
 	type ExperienceInput,
 } from "@/lib/types";
 import { normalizeForMatch, truncate } from "@/lib/text";
-import { entries, essays, experiences, getInterview, updateInterview } from "./db";
+import { entries, essays, experiences, getInterview, getProfile, saveProfile, updateInterview } from "./db";
 import { HttpError, errorMessage } from "./errors";
 import { generateObject, resolveModel } from "./llm";
 import { EXTRACT_SYSTEM, ExtractResultSchema, extractPrompt, type ExtractResult } from "./prompts";
@@ -325,5 +327,98 @@ function normalizeInput(input: ExperienceInput): ExperienceInput {
 		skills: uniqueList(input.skills),
 		people: uniqueList(input.people),
 		quotes: uniqueList(input.quotes, 30),
+	};
+}
+
+/* ---------- bank export / import ---------- */
+
+export interface BankImportPlan {
+	entriesToAdd: Entry[];
+	experiencesToAdd: Experience[];
+	entriesSkipped: number;
+	experiencesSkipped: number;
+}
+
+/** Same shape the store accepts (server/store.ts); anything else can never
+ *  be written, so it counts as skipped rather than failing the import. */
+const IMPORTABLE_ID = /^[a-z]{1,4}_[a-f0-9]{12}$/;
+
+/** Decides what an imported bank adds: anything whose id is new here, so
+ *  re-importing your own export changes nothing. Notes are cut loose from
+ *  the exporting install's essays and interview (those ids mean nothing
+ *  here), and a note caught mid-sort goes back to pending, since nothing
+ *  will ever finish that run. Pure, unit-tested. */
+export function planBankImport(bundle: BankExport, have: { entryIds: Set<string>; experienceIds: Set<string> }): BankImportPlan {
+	const plan: BankImportPlan = { entriesToAdd: [], experiencesToAdd: [], entriesSkipped: 0, experiencesSkipped: 0 };
+	const seenEntries = new Set<string>();
+	for (const entry of bundle.entries) {
+		if (!IMPORTABLE_ID.test(entry.id) || have.entryIds.has(entry.id) || seenEntries.has(entry.id)) {
+			plan.entriesSkipped++;
+			continue;
+		}
+		seenEntries.add(entry.id);
+		plan.entriesToAdd.push({
+			...entry,
+			essayId: null,
+			questionId: null,
+			interviewQuestionId: null,
+			extraction: entry.extraction.status === "running" ? { ...entry.extraction, status: "pending" as const } : entry.extraction,
+		});
+	}
+	const seenExperiences = new Set<string>();
+	for (const exp of bundle.experiences) {
+		if (!IMPORTABLE_ID.test(exp.id) || have.experienceIds.has(exp.id) || seenExperiences.has(exp.id)) {
+			plan.experiencesSkipped++;
+			continue;
+		}
+		seenExperiences.add(exp.id);
+		plan.experiencesToAdd.push(exp);
+	}
+	return plan;
+}
+
+export async function exportBank(): Promise<BankExport> {
+	const [profile, entryList, experienceList] = await Promise.all([getProfile(), entries.list(), experiences.list()]);
+	return {
+		app: "essayharness",
+		kind: "experience-bank",
+		version: 1,
+		exportedAt: nowIso(),
+		profile,
+		entries: byCreated(entryList),
+		experiences: byCreated(experienceList),
+	};
+}
+
+export async function importBank(bundle: BankExport): Promise<BankImportResult> {
+	const [entryList, experienceList] = await Promise.all([entries.list(), experiences.list()]);
+	const plan = planBankImport(bundle, {
+		entryIds: new Set(entryList.map((e) => e.id)),
+		experienceIds: new Set(experienceList.map((e) => e.id)),
+	});
+	for (const entry of plan.entriesToAdd) await entries.put(entry);
+	for (const exp of plan.experiencesToAdd) await experiences.put(exp);
+
+	// The profile only fills a blank "About you"; an import never overwrites
+	// facts already entered on this install.
+	let profileImported = false;
+	if (bundle.profile) {
+		const fieldsOf = (p: typeof bundle.profile) =>
+			p ? [p.name, p.education, p.field, p.goals, p.location, p.other] : [];
+		const current = await getProfile();
+		const blankHere = fieldsOf(current).every((v) => !v.trim());
+		const hasContent = fieldsOf(bundle.profile).some((v) => v.trim());
+		if (blankHere && hasContent) {
+			const { updatedAt: _ignored, ...fields } = bundle.profile;
+			await saveProfile(fields);
+			profileImported = true;
+		}
+	}
+	return {
+		entriesAdded: plan.entriesToAdd.length,
+		entriesSkipped: plan.entriesSkipped,
+		experiencesAdded: plan.experiencesToAdd.length,
+		experiencesSkipped: plan.experiencesSkipped,
+		profileImported,
 	};
 }

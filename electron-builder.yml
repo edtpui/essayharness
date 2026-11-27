@@ -18,6 +18,12 @@ files:
 extraResources:
   - from: dist-app/server
     to: server
+  # The server's dependencies. They cannot live at server/node_modules:
+  # electron-builder strips a top-level "node_modules" folder out of a
+  # resource copy. One level up, at resources/node_modules, Node finds
+  # them anyway by walking up from server.js.
+  - from: dist-app/deps
+    to: node_modules
 
 win:
   target:
