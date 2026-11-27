@@ -5,6 +5,12 @@
 // a window. App data stays where the server expects it (default
 // ~/.essayharness, override SE_DATA_DIR); nothing is written next to
 // the app itself.
+//
+// The packaged server's dependencies ship as resources/server/server_deps,
+// not node_modules: electron-builder strips a top-level "node_modules"
+// folder out of extraResources (see scripts/stage-standalone.mjs). The
+// spawn below therefore sets NODE_PATH to that folder so the server's
+// require() calls resolve.
 
 import { app, BrowserWindow, dialog } from "electron";
 import { spawn } from "node:child_process";
@@ -32,15 +38,22 @@ function serverEntry() {
 
 function startServer() {
 	const entry = serverEntry();
+	const env = {
+		...process.env,
+		ELECTRON_RUN_AS_NODE: "1",
+		NODE_ENV: "production",
+		HOSTNAME: HOST,
+		PORT: String(PORT),
+	};
+	if (app.isPackaged) {
+		// The dependencies live in server_deps, not node_modules (see the
+		// header comment); NODE_PATH is where require() looks for them.
+		const deps = path.join(process.resourcesPath, "server", "server_deps");
+		env.NODE_PATH = env.NODE_PATH ? deps + path.delimiter + env.NODE_PATH : deps;
+	}
 	serverProcess = spawn(process.execPath, [entry], {
 		cwd: path.dirname(entry),
-		env: {
-			...process.env,
-			ELECTRON_RUN_AS_NODE: "1",
-			NODE_ENV: "production",
-			HOSTNAME: HOST,
-			PORT: String(PORT),
-		},
+		env,
 		stdio: "inherit",
 	});
 	serverProcess.on("exit", (code) => {
