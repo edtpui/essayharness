@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/edtpui/essayharness/releases/tag/v0.3.0"><img src="https://img.shields.io/github/v/release/edtpui/essayharness?color=e8a33d&style=flat-square" alt="Latest release"></a>
+  <a href="https://github.com/edtpui/essayharness/releases/tag/v0.4.0"><img src="https://img.shields.io/github/v/release/edtpui/essayharness?color=e8a33d&style=flat-square" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/edtpui/essayharness?style=flat-square" alt="License: AGPL-3.0"></a>
   <a href="https://github.com/edtpui/essayharness/releases"><img src="https://img.shields.io/github/downloads/edtpui/essayharness/total?style=flat-square" alt="Downloads"></a>
   <a href="https://github.com/edtpui/essayharness/stargazers"><img src="https://img.shields.io/github/stars/edtpui/essayharness?style=flat-square" alt="GitHub stars"></a>
@@ -22,12 +22,12 @@ Your own API keys, dictation streamed straight from your browser, plain-file loc
 
 | Platform | Get it |
 | --- | --- |
-| Windows | [EssayHarness.Setup.0.3.0.exe](https://github.com/edtpui/essayharness/releases/download/v0.3.0/EssayHarness.Setup.0.3.0.exe) |
-| macOS (Apple Silicon) | [EssayHarness-0.3.0-arm64.dmg](https://github.com/edtpui/essayharness/releases/download/v0.3.0/EssayHarness-0.3.0-arm64.dmg) |
-| macOS (Intel) | [EssayHarness-0.3.0.dmg](https://github.com/edtpui/essayharness/releases/download/v0.3.0/EssayHarness-0.3.0.dmg) |
-| Docker | `docker pull ghcr.io/edtpui/essayharness:0.3.0` |
+| Windows | [EssayHarness.Setup.0.4.0.exe](https://github.com/edtpui/essayharness/releases/download/v0.4.0/EssayHarness.Setup.0.4.0.exe) |
+| macOS (Apple Silicon) | [EssayHarness-0.4.0-arm64.dmg](https://github.com/edtpui/essayharness/releases/download/v0.4.0/EssayHarness-0.4.0-arm64.dmg) |
+| macOS (Intel) | [EssayHarness-0.4.0.dmg](https://github.com/edtpui/essayharness/releases/download/v0.4.0/EssayHarness-0.4.0.dmg) |
+| Docker | `docker pull ghcr.io/edtpui/essayharness:0.4.0` |
 
-Builds are currently unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch. On Windows, click **More info**, then **Run anyway**. On macOS, follow the steps below. See the [v0.3.0 release](https://github.com/edtpui/essayharness/releases/tag/v0.3.0) for details.
+Builds are currently unsigned, so Windows SmartScreen and macOS Gatekeeper will warn on first launch. On Windows, click **More info**, then **Run anyway**. On macOS, follow the steps below. See the [v0.4.0 release](https://github.com/edtpui/essayharness/releases/tag/v0.4.0) for details.
 
 ### First launch on macOS
 
